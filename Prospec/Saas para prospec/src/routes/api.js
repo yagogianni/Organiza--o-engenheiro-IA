@@ -1,6 +1,6 @@
 // src/routes/api.js - API Endpoints
 import express from 'express';
-import { analyzeNewProspect, continueConversation } from '../services/claude.js';
+import { analyzeNewProspect, continueConversation } from '../services/ai.js';
 import {
   saveProspect,
   getProspect,

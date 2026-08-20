@@ -1,11 +1,11 @@
-// src/services/claude.js - Claude API Integration
-import Anthropic from '@anthropic-ai/sdk';
-import { CLAUDE_API_KEY, CLAUDE_MODEL } from '../config.js';
+// src/services/ai.js - LLM Integration (Groq, OpenAI-compatible API)
+import Groq from 'groq-sdk';
+import { GROQ_API_KEY, GROQ_MODEL } from '../config.js';
 
 let client;
 function getClient() {
   if (!client) {
-    client = new Anthropic({ apiKey: CLAUDE_API_KEY });
+    client = new Groq({ apiKey: GROQ_API_KEY });
   }
   return client;
 }
@@ -101,31 +101,33 @@ export function parseJSONResponse(text, requiredKeys) {
 }
 
 /**
- * Chama Claude API para análise de novo prospect
+ * Chama a IA (Groq) para análise de novo prospect
  */
 export async function analyzeNewProspect(prospectData) {
   const prompt = buildAnalysisPrompt(prospectData);
-  const message = await getClient().messages.create({
-    model: CLAUDE_MODEL,
+  const completion = await getClient().chat.completions.create({
+    model: GROQ_MODEL,
     max_tokens: 1024,
+    response_format: { type: 'json_object' },
     messages: [{ role: 'user', content: prompt }]
   });
-  return parseJSONResponse(message.content[0].text, [
+  return parseJSONResponse(completion.choices[0].message.content, [
     'situacaoAtual', 'objetivo', 'estrategia', 'oQueEvitar', 'mensagem', 'alternativa'
   ]);
 }
 
 /**
- * Chama Claude API para análise de resposta do prospect + próxima estratégia
+ * Chama a IA (Groq) para análise de resposta do prospect + próxima estratégia
  */
 export async function continueConversation(prospectContext, resposta) {
   const prompt = buildContinuePrompt(prospectContext, resposta);
-  const message = await getClient().messages.create({
-    model: CLAUDE_MODEL,
+  const completion = await getClient().chat.completions.create({
+    model: GROQ_MODEL,
     max_tokens: 1024,
+    response_format: { type: 'json_object' },
     messages: [{ role: 'user', content: prompt }]
   });
-  return parseJSONResponse(message.content[0].text, [
+  return parseJSONResponse(completion.choices[0].message.content, [
     'oQueSgnifica', 'ondeEstamos', 'objetivoAgora', 'estrategiaAgora',
     'oQueNaoFazer', 'proximaMensagem', 'timing'
   ]);

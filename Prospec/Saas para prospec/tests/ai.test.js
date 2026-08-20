@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildAnalysisPrompt, buildContinuePrompt, parseJSONResponse } from '../src/services/claude.js';
+import { buildAnalysisPrompt, buildContinuePrompt, parseJSONResponse } from '../src/services/ai.js';
 
 test('buildAnalysisPrompt embeds all prospect fields', () => {
   const prompt = buildAnalysisPrompt({

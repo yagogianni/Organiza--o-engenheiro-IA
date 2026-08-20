@@ -5,5 +5,5 @@ dotenv.config();
 
 export const PORT = process.env.PORT || 3000;
 export const DATA_DIR = process.env.DATA_DIR || './data';
-export const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY;
-export const CLAUDE_MODEL = process.env.CLAUDE_MODEL || 'claude-sonnet-5';
+export const GROQ_API_KEY = process.env.GROQ_API_KEY;
+export const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-20b';

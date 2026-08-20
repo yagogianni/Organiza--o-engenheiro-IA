@@ -2,7 +2,7 @@
 import express from 'express';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { PORT, CLAUDE_API_KEY } from './config.js';
+import { PORT, GROQ_API_KEY } from './config.js';
 import { initializeDataDir } from './services/storage.js';
 import apiRoutes from './routes/api.js';
 
@@ -45,8 +45,8 @@ app.listen(PORT, () => {
 ╚════════════════════════════════════════╝
   `);
 
-  if (!CLAUDE_API_KEY) {
-    console.warn('⚠️  AVISO: CLAUDE_API_KEY não configurada em .env');
-    console.warn('   Abrir .env e adicionar sua chave da API');
+  if (!GROQ_API_KEY) {
+    console.warn('⚠️  AVISO: GROQ_API_KEY não configurada em .env');
+    console.warn('   Abrir .env e adicionar sua chave da API (grátis em https://console.groq.com)');
   }
 });
