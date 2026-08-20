@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎯 PROSPEC.AI - Sistema de Prospecção Inteligente</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/theme.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <h1>🎯 PROSPEC.AI</h1>
+      <p class="subtitle">Sistema de Prospecção Inteligente com Claude IA</p>
+      <div class="header-controls">
+        <button id="themeToggle" class="btn-icon" title="Toggle dark/light mode">
+          🌙 Dark
+        </button>
+      </div>
+    </header>
+
+    <!-- Tab Navigation -->
+    <nav class="tabs">
+      <button class="tab-btn active" data-tab="nova-prospec">
+        📝 Nova Prospecção
+      </button>
+      <button class="tab-btn" data-tab="continuar-conversa">
+        📋 Continuar Conversa
+      </button>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="content">
+      <!-- TAB 1: Nova Prospecção -->
+      <section id="nova-prospec" class="tab-content active">
+        <div class="layout-2col">
+          <!-- Left Panel: Form -->
+          <div class="panel form-panel">
+            <h2>Adicionar Novo Prospect</h2>
+            <form id="formNovaProspec">
+              <div class="form-group">
+                <label for="empresa">Nome da Empresa *</label>
+                <input type="text" id="empresa" name="empresa"
+                       placeholder="Ex: TechFlow Soluções" required>
+              </div>
+
+              <div class="form-group">
+                <label for="segmento">Segmento *</label>
+                <select id="segmento" name="segmento" required>
+                  <option value="">Selecione um segmento...</option>
+                  <option value="SaaS">SaaS</option>
+                  <option value="Consultoria">Consultoria</option>
+                  <option value="Educação">Educação</option>
+                  <option value="Saúde">Saúde</option>
+                  <option value="Financeiro">Financeiro</option>
+                  <option value="Varejo">Varejo</option>
+                  <option value="Logística">Logística</option>
+                  <option value="Manufatura">Manufatura</option>
+                  <option value="Outro">Outro</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="contato">Nome do Contato *</label>
+                <input type="text" id="contato" name="contato"
+                       placeholder="Ex: João Silva" required>
+              </div>
+
+              <div class="form-group">
+                <label for="cargo">Cargo/Função *</label>
+                <input type="text" id="cargo" name="cargo"
+                       placeholder="Ex: Gerente de Vendas" required>
+              </div>
+
+              <div class="form-group">
+                <label for="info">Informações Adicionais</label>
+                <textarea id="info" name="info" rows="3"
+                          placeholder="Adicione contexto relevante..."></textarea>
+              </div>
+
+              <div class="form-group">
+                <label for="site">Site ou LinkedIn (opcional)</label>
+                <input type="text" id="site" name="site"
+                       placeholder="Ex: www.empresa.com">
+              </div>
+
+              <button type="submit" class="btn btn-primary">
+                🔍 Analisar Prospect
+              </button>
+            </form>
+          </div>
+
+          <!-- Right Panel: Analysis Result -->
+          <div class="panel result-panel" id="resultPanel" style="display: none;">
+            <h2>📊 Análise & Recomendações</h2>
+
+            <div id="loadingSpinner" class="loading-spinner" style="display: none;">
+              <div class="spinner"></div>
+              <p>Analisando com Claude IA...</p>
+            </div>
+
+            <div id="analysisResult" style="display: none;">
+              <div class="analysis-section">
+                <h3>✅ SITUAÇÃO ATUAL</h3>
+                <p id="situacaoAtual"></p>
+              </div>
+
+              <div class="analysis-section">
+                <h3>🎯 OBJETIVO</h3>
+                <p id="objetivo"></p>
+              </div>
+
+              <div class="analysis-section">
+                <h3>🧠 ESTRATÉGIA</h3>
+                <p id="estrategia"></p>
+              </div>
+
+              <div class="analysis-section warning">
+                <h3>⚠️ O QUE EVITAR</h3>
+                <p id="oQueEvitar"></p>
+              </div>
+
+              <div class="analysis-section message">
+                <h3>💬 MENSAGEM PARA ENVIAR</h3>
+                <div class="message-box" id="mensagem"></div>
+                <div class="button-group">
+                  <button class="btn btn-success" id="btnCopiarMensagem">
+                    📋 Copiar Mensagem
+                  </button>
+                  <button class="btn btn-secondary" id="btnAlternativa">
+                    🔄 Gerar Alternativa
+                  </button>
+                </div>
+              </div>
+
+              <div id="alternativaSection" style="display: none;" class="analysis-section message">
+                <h3>💬 MENSAGEM ALTERNATIVA</h3>
+                <div class="message-box" id="alternativa"></div>
+                <button class="btn btn-success" id="btnCopiarAlternativa">
+                  📋 Copiar Alternativa
+                </button>
+              </div>
+            </div>
+
+            <div id="errorMessage" class="error-message" style="display: none;"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: Continuar Conversa -->
+      <section id="continuar-conversa" class="tab-content">
+        <div class="layout-2col">
+          <!-- Left Panel: Prospects List -->
+          <div class="panel prospects-list-panel">
+            <h2>📋 Seus Prospects</h2>
+
+            <div class="filter-group">
+              <input type="text" id="searchProspect" placeholder="Buscar prospect..."
+                     class="search-input">
+              <select id="filterStatus" class="filter-select">
+                <option value="">Todos os status</option>
+                <option value="frio">Frio</option>
+                <option value="curioso">Curioso</option>
+                <option value="interessado">Interessado</option>
+                <option value="qualificado">Qualificado</option>
+              </select>
+            </div>
+
+            <div id="prospectsList" class="prospects-list">
+              <p class="empty-message">Nenhum prospect ainda. Crie um novo na aba anterior.</p>
+            </div>
+          </div>
+
+          <!-- Right Panel: Conversation History -->
+          <div class="panel conversation-panel">
+            <h2>💬 Histórico da Conversa</h2>
+
+            <div id="conversationDetail" style="display: none;">
+              <div class="prospect-header">
+                <h3 id="prospectCompanyName"></h3>
+                <p>
+                  <strong>Contato:</strong> <span id="prospectContactName"></span> -
+                  <span id="prospectContactRole"></span>
+                </p>
+              </div>
+
+              <div id="conversationHistory" class="conversation-history">
+                <!-- Histórico carregado dinamicamente -->
+              </div>
+
+              <div class="new-response-section">
+                <h3>Adicionar Resposta do Prospect</h3>
+                <textarea id="newResponse" rows="4"
+                          placeholder="Cole a resposta que recebeu do prospect..."></textarea>
+                <button class="btn btn-primary" id="btnAnalyzarContinuar">
+                  🔍 Analisar e Continuar
+                </button>
+              </div>
+
+              <div id="continueAnalysisResult" style="display: none;">
+                <div class="analysis-section">
+                  <h3>🎯 O QUE SIGNIFICA</h3>
+                  <p id="oQueSgnifica"></p>
+                </div>
+
+                <div class="analysis-section">
+                  <h3>📍 ONDE ESTAMOS NA VENDA</h3>
+                  <p id="ondeEstamos"></p>
+                </div>
+
+                <div class="analysis-section">
+                  <h3>🎯 OBJETIVO AGORA</h3>
+                  <p id="objetivoAgora"></p>
+                </div>
+
+                <div class="analysis-section">
+                  <h3>🧠 ESTRATÉGIA RECOMENDADA</h3>
+                  <p id="estrategiaAgora"></p>
+                </div>
+
+                <div class="analysis-section warning">
+                  <h3>⚠️ O QUE NÃO FAZER</h3>
+                  <p id="oQueNaoFazer"></p>
+                </div>
+
+                <div class="analysis-section message">
+                  <h3>💬 PRÓXIMA MENSAGEM</h3>
+                  <div class="message-box" id="proximaMensagem"></div>
+                  <button class="btn btn-success" id="btnCopiarProximaMensagem">
+                    📋 Copiar Mensagem
+                  </button>
+                </div>
+
+                <div class="analysis-section">
+                  <h3>⏱️ TIMING</h3>
+                  <p id="timing"></p>
+                </div>
+              </div>
+
+              <div id="continueErrorMessage" class="error-message" style="display: none;"></div>
+            </div>
+
+            <div id="noSelection" class="empty-message">
+              Selecione um prospect da lista para ver o histórico
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>🎯 PROSPEC.AI v0.1.0 • Fase 1 (MVP)</p>
+      <p>Desenvolvido com ❤️ • Dados salvos localmente</p>
+    </footer>
+  </div>
+
+  <!-- Scripts -->
+  <script type="module" src="/js/storage-local.js"></script>
+  <script type="module" src="/js/api.js"></script>
+  <script type="module" src="/js/ui.js"></script>
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>
