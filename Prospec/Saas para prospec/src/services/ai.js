@@ -108,7 +108,6 @@ export async function analyzeNewProspect(prospectData) {
   const completion = await getClient().chat.completions.create({
     model: GROQ_MODEL,
     max_tokens: 1024,
-    response_format: { type: 'json_object' },
     messages: [{ role: 'user', content: prompt }]
   });
   return parseJSONResponse(completion.choices[0].message.content, [
@@ -124,7 +123,6 @@ export async function continueConversation(prospectContext, resposta) {
   const completion = await getClient().chat.completions.create({
     model: GROQ_MODEL,
     max_tokens: 1024,
-    response_format: { type: 'json_object' },
     messages: [{ role: 'user', content: prompt }]
   });
   return parseJSONResponse(completion.choices[0].message.content, [
