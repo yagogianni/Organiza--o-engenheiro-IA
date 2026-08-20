@@ -1,6 +1,7 @@
 // src/routes/api.js - API Endpoints
 import express from 'express';
 import { analyzeNewProspect, continueConversation } from '../services/ai.js';
+import { fetchSiteText } from '../services/site-scraper.js';
 import {
   saveProspect,
   getProspect,
@@ -18,7 +19,8 @@ const router = express.Router();
 router.post('/analyze', async (req, res) => {
   try {
     validateNewProspect(req.body);
-    const analysis = await analyzeNewProspect(req.body);
+    const siteContent = req.body.site ? await fetchSiteText(req.body.site) : null;
+    const analysis = await analyzeNewProspect({ ...req.body, siteContent });
     const saved = await saveProspect(req.body, analysis);
     res.json({ ...saved, ...analysis });
   } catch (error) {

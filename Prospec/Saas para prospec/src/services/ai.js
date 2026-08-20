@@ -38,6 +38,10 @@ Metodologia de copywriting a seguir (adaptada para prospecção B2B fria):
  * Monta o prompt de análise inicial de um prospect
  */
 export function buildAnalysisPrompt(data) {
+  const siteBlock = data.siteContent
+    ? `\nCONTEÚDO DO SITE (extraído automaticamente de ${data.site} — use para tornar a análise e a mensagem mais específicas, ex: serviços oferecidos, especialidades, tom de comunicação):\n"""\n${data.siteContent}\n"""\n`
+    : '';
+
   return `Você é um especialista em prospecção B2B e copywriting consultivo.
 
 PROSPECT:
@@ -47,7 +51,7 @@ PROSPECT:
 - Cargo: ${data.cargo}
 - Informações adicionais: ${data.info || 'Nenhuma'}
 - Site: ${data.site || 'Não fornecido'}
-
+${siteBlock}
 Antes de gerar a mensagem, analise: estágio provável (${ESTAGIOS_VALIDOS}), quem é o interlocutor (decisor, gatekeeper, influenciador...) e qual o melhor ponto de entrada.
 ${METODOLOGIA}
 Responda APENAS com um JSON válido, sem texto antes ou depois, no formato:

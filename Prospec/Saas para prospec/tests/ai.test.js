@@ -15,6 +15,22 @@ test('buildAnalysisPrompt embeds all prospect fields', () => {
   assert.match(prompt, /acme\.com/);
 });
 
+test('buildAnalysisPrompt includes extracted site content when provided', () => {
+  const prompt = buildAnalysisPrompt({
+    empresa: 'Acme', segmento: 'SaaS', contato: 'Joao', cargo: 'CEO',
+    site: 'acme.com', siteContent: 'Especialistas em automação de vendas B2B.'
+  });
+  assert.match(prompt, /CONTEÚDO DO SITE/);
+  assert.match(prompt, /Especialistas em automação de vendas B2B\./);
+});
+
+test('buildAnalysisPrompt omits the site content block when not provided', () => {
+  const prompt = buildAnalysisPrompt({
+    empresa: 'Acme', segmento: 'SaaS', contato: 'Joao', cargo: 'CEO', site: 'acme.com'
+  });
+  assert.doesNotMatch(prompt, /CONTEÚDO DO SITE/);
+});
+
 test('buildAnalysisPrompt handles missing optional fields', () => {
   const prompt = buildAnalysisPrompt({
     empresa: 'Acme', segmento: 'SaaS', contato: 'Joao', cargo: 'CEO'
