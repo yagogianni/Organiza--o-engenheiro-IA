@@ -61,6 +61,12 @@
                 </select>
               </div>
 
+              <div class="form-group" id="segmentoOutroGroup" style="display: none;">
+                <label for="segmentoOutro">Especifique o segmento *</label>
+                <input type="text" id="segmentoOutro" name="segmentoOutro"
+                       placeholder="Ex: Imobiliário">
+              </div>
+
               <div class="form-group">
                 <label for="contato">Nome do Contato *</label>
                 <input type="text" id="contato" name="contato"
@@ -97,10 +103,12 @@
 
             <div id="loadingSpinner" class="loading-spinner" style="display: none;">
               <div class="spinner"></div>
-              <p>Analisando com Claude IA...</p>
+              <p>Analisando com IA...</p>
             </div>
 
             <div id="analysisResult" style="display: none;">
+              <span id="estagioBadge" class="stage-badge"></span>
+
               <div class="analysis-section">
                 <h3>✅ SITUAÇÃO ATUAL</h3>
                 <p id="situacaoAtual"></p>
@@ -199,6 +207,8 @@
               </div>
 
               <div id="continueAnalysisResult" style="display: none;">
+                <span id="estagioAtualBadge" class="stage-badge"></span>
+
                 <div class="analysis-section">
                   <h3>🎯 O QUE SIGNIFICA</h3>
                   <p id="oQueSgnifica"></p>

@@ -22,6 +22,12 @@ function initializeEventListeners() {
     formNovaProspec.addEventListener('submit', handleNewProspect);
   }
 
+  // Show/require the "specify segmento" field only when "Outro" is selected
+  const segmentoSelect = document.getElementById('segmento');
+  if (segmentoSelect) {
+    segmentoSelect.addEventListener('change', () => toggleSegmentoOutro(segmentoSelect.value));
+  }
+
   // Theme toggle
   const themeToggle = document.getElementById('themeToggle');
   if (themeToggle) {
@@ -91,6 +97,23 @@ function switchTab(tabName, clickedBtn) {
 }
 
 /**
+ * Show/hide and require the "Especifique o segmento" field based on
+ * whether "Outro" is selected in the segmento dropdown.
+ */
+function toggleSegmentoOutro(segmentoValue) {
+  const group = document.getElementById('segmentoOutroGroup');
+  const input = document.getElementById('segmentoOutro');
+  if (!group || !input) return;
+
+  const isOutro = segmentoValue === 'Outro';
+  group.style.display = isOutro ? 'block' : 'none';
+  input.required = isOutro;
+  if (!isOutro) {
+    input.value = '';
+  }
+}
+
+/**
  * Handle form submission for new prospect
  */
 async function handleNewProspect(e) {
@@ -101,6 +124,13 @@ async function handleNewProspect(e) {
   // Get form data
   const formData = new FormData(e.target);
   const data = Object.fromEntries(formData);
+
+  // When "Outro" is picked, send the specific segment the user typed
+  // instead of the literal word "Outro"
+  if (data.segmento === 'Outro') {
+    data.segmento = (data.segmentoOutro || '').trim();
+  }
+  delete data.segmentoOutro;
 
   // Show loading
   showLoadingSpinner('resultPanel');
@@ -168,6 +198,7 @@ function displayAnalysisResult(result) {
   hideLoadingSpinner('resultPanel');
 
   // Display all fields
+  document.getElementById('estagioBadge').textContent = result.estagio || '';
   document.getElementById('situacaoAtual').textContent = result.situacaoAtual || '';
   document.getElementById('objetivo').textContent = result.objetivo || '';
   document.getElementById('estrategia').textContent = result.estrategia || '';
@@ -185,6 +216,7 @@ function displayAnalysisResult(result) {
  * Display continue analysis
  */
 function displayContinueAnalysis(result) {
+  document.getElementById('estagioAtualBadge').textContent = result.estagioAtual || '';
   document.getElementById('oQueSgnifica').textContent = result.oQueSgnifica || '';
   document.getElementById('ondeEstamos').textContent = result.ondeEstamos || '';
   document.getElementById('objetivoAgora').textContent = result.objetivoAgora || '';
