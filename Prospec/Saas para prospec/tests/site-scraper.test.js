@@ -19,6 +19,9 @@ before(async () => {
           </body>
         </html>
       `);
+    } else if (req.url === '/entities') {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end('<html><body><p>&#064;dr.exemplo &#x40;outro</p></body></html>');
     } else if (req.url === '/json') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end('{"ok":true}');
@@ -48,6 +51,11 @@ test('fetchSiteText extracts visible text and strips scripts/styles/tags', async
   assert.doesNotMatch(text, /should be stripped/);
   assert.doesNotMatch(text, /color: red/);
   assert.doesNotMatch(text, /<[^>]+>/);
+});
+
+test('fetchSiteText decodes numeric HTML entities (decimal and hex)', async () => {
+  const text = await fetchSiteText(`${baseUrl}/entities`);
+  assert.match(text, /@dr\.exemplo @outro/);
 });
 
 test('fetchSiteText returns null for an empty/missing url', async () => {
