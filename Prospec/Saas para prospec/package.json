@@ -1,0 +1,31 @@
+{
+  "name": "prospec-ai",
+  "version": "0.1.0",
+  "description": "Sistema de prospecção B2B com análise inteligente e mensagens personalizadas",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "node --test"
+  },
+  "keywords": [
+    "prospecção",
+    "vendas",
+    "b2b",
+    "claude",
+    "ia"
+  ],
+  "author": "Yago Gianni",
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.120.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "json5": "^2.2.3",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
