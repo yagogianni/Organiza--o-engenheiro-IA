@@ -10,7 +10,7 @@ Ferramenta de prospecção B2B que fornece análise estratégica e mensagens per
 
 ### Modo fácil (Windows)
 
-1. Configure o `.env` uma vez só (copie `.env.example` para `.env` e adicione sua `GROQ_API_KEY`, gratuita em https://console.groq.com).
+1. Configure o `.env` uma vez só (copie `.env.example` para `.env` e adicione sua `GEMINI_API_KEY`, gratuita em https://aistudio.google.com/apikey).
 2. Dê duplo-clique em **`Iniciar PROSPEC.AI.bat`**. Ele instala dependências na primeira vez, sobe o servidor e abre o navegador sozinho.
 3. Para parar, feche a janela preta que abriu.
 
@@ -24,9 +24,9 @@ cd prospec-ai
 # 2. Instalar dependências
 npm install
 
-# 3. Configurar Groq API key (gratuita)
+# 3. Configurar Gemini API key (gratuita)
 cp .env.example .env
-# Editar .env e adicionar: GROQ_API_KEY=gsk_XXXX...
+# Editar .env e adicionar: GEMINI_API_KEY=XXXX...
 
 # 4. Iniciar servidor
 npm start

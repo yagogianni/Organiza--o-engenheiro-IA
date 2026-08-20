@@ -1,11 +1,11 @@
-// src/services/ai.js - LLM Integration (Groq, OpenAI-compatible API)
-import Groq from 'groq-sdk';
-import { GROQ_API_KEY, GROQ_MODEL } from '../config.js';
+// src/services/ai.js - LLM Integration (Gemini)
+import { GoogleGenAI } from '@google/genai';
+import { GEMINI_API_KEY, GEMINI_MODEL } from '../config.js';
 
 let client;
 function getClient() {
   if (!client) {
-    client = new Groq({ apiKey: GROQ_API_KEY });
+    client = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
   }
   return client;
 }
@@ -121,33 +121,31 @@ export function parseJSONResponse(text, requiredKeys) {
 }
 
 /**
- * Chama a IA (Groq) para análise de novo prospect
+ * Chama a IA (Gemini) para análise de novo prospect
  */
 export async function analyzeNewProspect(prospectData) {
   const prompt = buildAnalysisPrompt(prospectData);
-  const completion = await getClient().chat.completions.create({
-    model: GROQ_MODEL,
-    max_tokens: 2048,
-    reasoning_effort: 'low',
-    messages: [{ role: 'user', content: prompt }]
+  const response = await getClient().models.generateContent({
+    model: GEMINI_MODEL,
+    contents: prompt,
+    config: { responseMimeType: 'application/json', maxOutputTokens: 2048 }
   });
-  return parseJSONResponse(completion.choices[0].message.content, [
+  return parseJSONResponse(response.text, [
     'estagio', 'situacaoAtual', 'objetivo', 'estrategia', 'oQueEvitar', 'mensagem', 'alternativa'
   ]);
 }
 
 /**
- * Chama a IA (Groq) para análise de resposta do prospect + próxima estratégia
+ * Chama a IA (Gemini) para análise de resposta do prospect + próxima estratégia
  */
 export async function continueConversation(prospectContext, resposta) {
   const prompt = buildContinuePrompt(prospectContext, resposta);
-  const completion = await getClient().chat.completions.create({
-    model: GROQ_MODEL,
-    max_tokens: 2048,
-    reasoning_effort: 'low',
-    messages: [{ role: 'user', content: prompt }]
+  const response = await getClient().models.generateContent({
+    model: GEMINI_MODEL,
+    contents: prompt,
+    config: { responseMimeType: 'application/json', maxOutputTokens: 2048 }
   });
-  return parseJSONResponse(completion.choices[0].message.content, [
+  return parseJSONResponse(response.text, [
     'oQueSgnifica', 'estagioAtual', 'ondeEstamos', 'objetivoAgora', 'estrategiaAgora',
     'oQueNaoFazer', 'proximaMensagem', 'timing'
   ]);

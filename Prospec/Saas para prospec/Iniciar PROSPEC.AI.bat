@@ -10,7 +10,7 @@ if not exist node_modules (
 if not exist .env (
   echo.
   echo AVISO: arquivo .env nao encontrado.
-  echo Copie .env.example para .env e adicione sua GROQ_API_KEY
+  echo Copie .env.example para .env e adicione sua GEMINI_API_KEY
   echo antes de usar a analise por IA.
   echo.
 )

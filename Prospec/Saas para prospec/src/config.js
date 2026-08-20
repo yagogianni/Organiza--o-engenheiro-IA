@@ -5,5 +5,5 @@ dotenv.config();
 
 export const PORT = process.env.PORT || 3000;
 export const DATA_DIR = process.env.DATA_DIR || './data';
-export const GROQ_API_KEY = process.env.GROQ_API_KEY;
-export const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-20b';
+export const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+export const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
