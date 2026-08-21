@@ -2,10 +2,11 @@
 import express from 'express';
 import { analyzeNewProspect, continueConversation } from '../services/ai.js';
 import { fetchSiteText } from '../services/site-scraper.js';
+import { computePipelineStage } from '../services/pipeline.js';
 import {
   saveProspect,
   getProspect,
-  getAllProspects,
+  getAllProspectsWithPipeline,
   addToHistory
 } from '../services/storage.js';
 import { validateNewProspect, validateContinueInput } from '../utils/validators.js';
@@ -50,12 +51,16 @@ router.post('/continue', async (req, res) => {
 
 /**
  * GET /api/prospects
- * Retorna lista de todos os prospects
+ * Retorna lista de todos os prospects, cada um com o estágio do pipeline
  */
 router.get('/prospects', async (req, res) => {
   try {
-    const prospects = await getAllProspects();
-    res.json(prospects);
+    const prospects = await getAllProspectsWithPipeline();
+    const withPipeline = prospects.map(({ historico, analises, ...rest }) => ({
+      ...rest,
+      pipeline: computePipelineStage({ historico, analises })
+    }));
+    res.json(withPipeline);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -63,12 +68,12 @@ router.get('/prospects', async (req, res) => {
 
 /**
  * GET /api/prospect/:id
- * Retorna detalhes de um prospect (incluindo histórico)
+ * Retorna detalhes de um prospect (incluindo histórico e estágio do pipeline)
  */
 router.get('/prospect/:id', async (req, res) => {
   try {
     const prospect = await getProspect(req.params.id);
-    res.json(prospect);
+    res.json({ ...prospect, pipeline: computePipelineStage(prospect) });
   } catch (error) {
     if (error.message === 'PROSPECT_NOT_FOUND') {
       return res.status(404).json({ error: 'Prospect não encontrado' });

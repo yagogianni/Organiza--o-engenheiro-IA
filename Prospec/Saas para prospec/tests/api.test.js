@@ -5,7 +5,7 @@ import os from 'os';
 import path from 'path';
 import express from 'express';
 import apiRoutes from '../src/routes/api.js';
-import { initializeDataDir } from '../src/services/storage.js';
+import { initializeDataDir, saveProspect } from '../src/services/storage.js';
 
 let server, baseUrl, tmpDir;
 
@@ -62,4 +62,30 @@ test('GET /prospect/:id returns 404 for an unknown id', async () => {
   assert.equal(res.status, 404);
   const body = await res.json();
   assert.match(body.error, /não encontrado/);
+});
+
+test('GET /prospects includes a computed pipeline stage for each prospect', async () => {
+  await saveProspect(
+    { empresa: 'Echo Corp', segmento: 'Educação', contato: 'Rita', cargo: 'Diretora' },
+    { mensagem: 'Oi Rita!', estagio: 'frio' }
+  );
+
+  const res = await fetch(`${baseUrl}/prospects`);
+  const body = await res.json();
+
+  assert.equal(body.length, 1);
+  assert.equal(body[0].pipeline.stage, 'abordado');
+  assert.equal(body[0].historico, undefined);
+});
+
+test('GET /prospect/:id includes a computed pipeline stage', async () => {
+  const saved = await saveProspect(
+    { empresa: 'Foxtrot', segmento: 'Financeiro', contato: 'Caio', cargo: 'CFO' },
+    { mensagem: 'Oi Caio!', estagio: 'frio' }
+  );
+
+  const res = await fetch(`${baseUrl}/prospect/${saved.id}`);
+  const body = await res.json();
+
+  assert.equal(body.pipeline.stage, 'abordado');
 });
