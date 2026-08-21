@@ -1,6 +1,7 @@
 // src/services/ai.js - LLM Integration (Gemini)
 import { GoogleGenAI } from '@google/genai';
 import { GEMINI_API_KEY, GEMINI_MODEL } from '../config.js';
+import { computePipelineStage } from './pipeline.js';
 
 let client;
 function getClient() {
@@ -32,6 +33,10 @@ Metodologia de copywriting a seguir (adaptada para prospecção B2B fria):
 - Mensagem curta, humana, natural, 2-4 parágrafos curtos, sem blocos gigantes, sem parecer template.
 - Uma mensagem = um objetivo (um microcompromisso: resposta simples, uma pergunta, ou um convite de baixa fricção).
 - CTA de baixa fricção (ex: "Posso te mostrar?", nunca "Vamos agendar uma reunião de 1 hora?").
+- Nunca fabrique prova social ou números que não foram informados — prefira declarar especialização real a inventar estatística.
+- Não abra a mensagem com "tudo bem?" — soa como telemarketing; vá direto ao ponto.
+- Ao propor uma conversa ou reunião, ofereça sempre duas opções específicas de dia/horário, nunca um convite aberto.
+- Inclua um "espaço para o não" explícito (ex: "sem problema se não fizer sentido agora") para reduzir a fricção da resposta.
 `;
 
 /**
@@ -74,6 +79,11 @@ export function buildContinuePrompt(prospectContext, resposta) {
     .map(msg => `[${msg.tipo === 'outgoing' ? 'Você' : prospectContext.contato}] ${msg.conteudo}`)
     .join('\n\n');
 
+  const pipeline = computePipelineStage(prospectContext);
+  const followUpNote = (pipeline.stage === 'em_followup' || pipeline.stage === 'sem_resposta')
+    ? `\nCONTEXTO DE FOLLOW-UP: esta é a tentativa de contato nº ${pipeline.followUpCount + 1} sem resposta anterior registrada. Sugira ativamente trocar de canal de comunicação (ex: se as tentativas anteriores foram por Instagram, sugira WhatsApp, e-mail ou ligação) no campo "timing" ou na "proximaMensagem".\n`
+    : '';
+
   return `Você é um especialista em prospecção B2B e copywriting consultivo, continuando uma conversa já em andamento.
 
 PROSPECT:
@@ -84,7 +94,7 @@ PROSPECT:
 
 HISTÓRICO DA CONVERSA:
 ${historico || '(sem histórico anterior)'}
-
+${followUpNote}
 NOVA RESPOSTA RECEBIDA DO PROSPECT:
 "${resposta}"
 

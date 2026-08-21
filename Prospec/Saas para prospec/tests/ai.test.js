@@ -54,6 +54,29 @@ test('buildContinuePrompt handles an empty historico', () => {
   assert.match(prompt, /sem histórico anterior/);
 });
 
+test('buildContinuePrompt includes a channel-switch nudge when in follow-up territory', () => {
+  const historico = [
+    { tipo: 'outgoing', data: '1', conteudo: 'msg1' },
+    { tipo: 'outgoing', data: '2', conteudo: 'msg2' },
+    { tipo: 'outgoing', data: '3', conteudo: 'msg3' }
+  ];
+  const prompt = buildContinuePrompt(
+    { empresa: 'Acme', segmento: 'SaaS', contato: 'Joao', cargo: 'CEO', historico },
+    'Oi, desculpa a demora'
+  );
+  assert.match(prompt, /trocar de canal/);
+  assert.match(prompt, /tentativa de contato nº 4/);
+});
+
+test('buildContinuePrompt omits the channel-switch nudge on the first reply', () => {
+  const historico = [{ tipo: 'outgoing', data: '1', conteudo: 'msg1' }];
+  const prompt = buildContinuePrompt(
+    { empresa: 'Acme', segmento: 'SaaS', contato: 'Joao', cargo: 'CEO', historico },
+    'Oi!'
+  );
+  assert.doesNotMatch(prompt, /trocar de canal/);
+});
+
 test('parseJSONResponse extracts and validates JSON with all required keys present', () => {
   const text = 'Aqui está a análise: {"a": "1", "b": "2"} obrigado';
   const result = parseJSONResponse(text, ['a', 'b']);
