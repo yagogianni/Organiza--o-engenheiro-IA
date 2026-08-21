@@ -8,6 +8,7 @@ import {
   saveProspect,
   getProspect,
   getAllProspects,
+  getAllProspectsWithPipeline,
   addToHistory
 } from '../src/services/storage.js';
 
@@ -94,4 +95,20 @@ test('addToHistory throws PROSPECT_NOT_FOUND for an unknown id', async () => {
     () => addToHistory('prosp_does_not_exist', 'oi', {}),
     /PROSPECT_NOT_FOUND/
   );
+});
+
+test('getAllProspectsWithPipeline enriches each index entry with historico and analises', async () => {
+  const saved = await saveProspect(
+    { empresa: 'Delta', segmento: 'Varejo', contato: 'Bruno', cargo: 'Sócio' },
+    { mensagem: 'Oi Bruno!', estagio: 'frio' }
+  );
+
+  const enriched = await getAllProspectsWithPipeline();
+  const entry = enriched.find(p => p.id === saved.id);
+
+  assert.ok(entry);
+  assert.equal(entry.empresa, 'Delta');
+  assert.equal(entry.historico.length, 1);
+  assert.equal(entry.historico[0].tipo, 'outgoing');
+  assert.equal(entry.analises.length, 1);
 });

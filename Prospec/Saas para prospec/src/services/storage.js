@@ -62,6 +62,19 @@ export async function getAllProspects() {
 }
 
 /**
+ * Lê todos os prospects já enriquecidos com histórico e análises, para
+ * permitir o cálculo do estágio do pipeline na camada de rotas
+ */
+export async function getAllProspectsWithPipeline() {
+  const index = await readJSON5(indexFile(), { prospects: [] });
+  return Promise.all(index.prospects.map(async (entry) => {
+    const history = await readJSON5(historyFile(entry.id), { messages: [] });
+    const analyses = await readJSON5(analysesFile(entry.id), { analyses: [] });
+    return { ...entry, historico: history.messages, analises: analyses.analyses };
+  }));
+}
+
+/**
  * Lê um prospect específico, combinando metadata + histórico + análises
  */
 export async function getProspect(id) {
