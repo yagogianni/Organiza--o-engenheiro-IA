@@ -6,6 +6,8 @@ import { getTheme, saveTheme } from './storage-local.js';
 
 console.log('🎯 PROSPEC.AI - App Loading...');
 
+let currentProspects = [];
+
 // Initialize theme
 initializeTheme();
 
@@ -26,6 +28,16 @@ function initializeEventListeners() {
   const segmentoSelect = document.getElementById('segmento');
   if (segmentoSelect) {
     segmentoSelect.addEventListener('change', () => toggleSegmentoOutro(segmentoSelect.value));
+  }
+
+  // Pipeline list search/filter
+  const searchInput = document.getElementById('searchProspect');
+  if (searchInput) {
+    searchInput.addEventListener('input', renderFilteredProspectsList);
+  }
+  const filterSelect = document.getElementById('filterStatus');
+  if (filterSelect) {
+    filterSelect.addEventListener('change', renderFilteredProspectsList);
   }
 
   // Theme toggle
@@ -251,11 +263,29 @@ function copyToClipboard(elementId) {
 async function loadProspectsList() {
   console.log('📋 Carregando lista de prospects...');
   try {
-    const prospects = await getProspects();
-    displayProspectsList(prospects);
+    currentProspects = await getProspects();
+    renderFilteredProspectsList();
   } catch (error) {
     console.error('❌ Erro ao carregar prospects:', error);
   }
+}
+
+/**
+ * Apply the search box and pipeline-stage filter to the last-loaded list
+ */
+function renderFilteredProspectsList() {
+  const searchTerm = (document.getElementById('searchProspect')?.value || '').toLowerCase().trim();
+  const stageFilter = document.getElementById('filterStatus')?.value || '';
+
+  const filtered = currentProspects.filter(p => {
+    const matchesSearch = !searchTerm ||
+      p.empresa.toLowerCase().includes(searchTerm) ||
+      p.contato.toLowerCase().includes(searchTerm);
+    const matchesStage = !stageFilter || (p.pipeline && p.pipeline.stage === stageFilter);
+    return matchesSearch && matchesStage;
+  });
+
+  displayProspectsList(filtered);
 }
 
 /**
@@ -272,7 +302,10 @@ function displayProspectsList(prospects) {
 
   list.innerHTML = prospects.map(p => `
     <div class="prospect-item" data-id="${p.id}">
-      <div class="prospect-item-company">${p.empresa}</div>
+      <div class="prospect-item-header">
+        <div class="prospect-item-company">${p.empresa}</div>
+        <span class="stage-badge stage-badge--${p.pipeline ? p.pipeline.stage : ''}">${p.pipeline ? p.pipeline.label : ''}</span>
+      </div>
       <div class="prospect-item-info">${p.contato} • ${p.cargo}</div>
     </div>
   `).join('');
@@ -316,6 +349,17 @@ function displayConversationDetail(prospect) {
   document.getElementById('prospectCompanyName').textContent = prospect.empresa;
   document.getElementById('prospectContactName').textContent = prospect.contato;
   document.getElementById('prospectContactRole').textContent = prospect.cargo;
+
+  // Display pipeline tip
+  const tipBanner = document.getElementById('pipelineTipBanner');
+  if (tipBanner) {
+    if (prospect.pipeline) {
+      tipBanner.textContent = `${prospect.pipeline.label}: ${prospect.pipeline.tip}`;
+      tipBanner.style.display = 'block';
+    } else {
+      tipBanner.style.display = 'none';
+    }
+  }
 
   // Display conversation history
   const history = document.getElementById('conversationHistory');

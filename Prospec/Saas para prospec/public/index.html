@@ -26,7 +26,7 @@
         📝 Nova Prospecção
       </button>
       <button class="tab-btn" data-tab="continuar-conversa">
-        📋 Continuar Conversa
+        📊 Pipeline
       </button>
     </nav>
 
@@ -168,10 +168,14 @@
                      class="search-input">
               <select id="filterStatus" class="filter-select">
                 <option value="">Todos os status</option>
-                <option value="frio">Frio</option>
-                <option value="curioso">Curioso</option>
-                <option value="interessado">Interessado</option>
-                <option value="qualificado">Qualificado</option>
+                <option value="abordado">Abordado</option>
+                <option value="em_followup">Em Follow-up</option>
+                <option value="sem_resposta">Sem Resposta</option>
+                <option value="engajado">Engajado</option>
+                <option value="com_objecao">Com Objeção</option>
+                <option value="negociacao">Em Negociação</option>
+                <option value="parado">Parado</option>
+                <option value="perdido">Perdido</option>
               </select>
             </div>
 
@@ -192,6 +196,8 @@
                   <span id="prospectContactRole"></span>
                 </p>
               </div>
+
+              <div id="pipelineTipBanner" class="pipeline-tip"></div>
 
               <div id="conversationHistory" class="conversation-history">
                 <!-- Histórico carregado dinamicamente -->
