@@ -55,3 +55,7 @@ Fonte de entrada: formulário manual hospedado pelo próprio n8n (decisão do us
 ## 5. Teste
 
 Preencher o formulário 2x com o mesmo e-mail — a segunda vez deve **atualizar**, não duplicar, e o `automation_events` deve ter 2 entradas `LEAD_CREATED` pro mesmo lead. Confirmar via `execute_sql` no Supabase (mesma ferramenta usada na Fase 2).
+
+**Status: testado e funcionando (2026-08-22).** Submissão 1 criou o lead (`status: READY_FOR_OUTREACH`); submissão 2 com o mesmo telefone atualizou nome/empresa/nicho/email/site do mesmo lead (sem duplicar) e registrou o segundo evento `LEAD_CREATED`.
+
+Pegadinha ao testar via curl/API (não afeta o uso normal pelo navegador): o formulário público do n8n renderiza os campos com o rótulo (`fieldLabel`) que aparece na tela, mas o HTML real que o navegador envia usa nomes posicionais `field-0`, `field-1`, `field-2`... (na ordem em que os campos foram definidos no node). O node de Código depois remonta o JSON usando os rótulos (`"Nome da Empresa"`, `"Nicho"`, ...) — por isso o `input['Nome da Empresa']` no Código funciona normalmente. Um POST direto usando os rótulos como chave (ex: `-F "Nome da Empresa=..."`) é aceito com HTTP 200 mas os campos chegam `null`, porque o backend só reconhece `field-0`, `field-1` etc. Um navegador real preenchendo o formulário não tem esse problema — isso só importa para quem for testar via curl/API.
