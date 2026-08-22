@@ -1,82 +1,90 @@
-import { test, before, after } from 'node:test';
+import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'fs/promises';
-import os from 'os';
-import path from 'path';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
 import {
-  initializeDataDir,
-  saveProspect,
-  getProspect,
   getAllProspects,
   getAllProspectsWithPipeline,
+  getProspect,
+  saveProspect,
   addToHistory
 } from '../src/services/storage.js';
 
-let tmpDir;
+const createdLeadIds = [];
 
-before(async () => {
-  tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'prospec-storage-test-'));
-  process.env.DATA_DIR = tmpDir;
-});
+async function cleanup() {
+  if (createdLeadIds.length === 0) return;
+  const { createClient } = await import('@supabase/supabase-js');
+  const client = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+  await client.from('leads').delete().in('id', createdLeadIds);
+}
 
-after(async () => {
-  delete process.env.DATA_DIR;
-  await fs.rm(tmpDir, { recursive: true, force: true });
-});
+after(cleanup);
 
-test('initializeDataDir creates the data dir and an empty index', async () => {
-  await initializeDataDir();
-  const prospects = await getAllProspects();
-  assert.deepEqual(prospects, []);
-});
-
-test('saveProspect persists metadata, history, analyses, and updates the index', async () => {
+test('saveProspect creates a lead, conversation, message, and event; returns the expected shape', async () => {
   const analysis = {
-    situacaoAtual: 'x', objetivo: 'y', estrategia: 'z',
-    oQueEvitar: 'w', mensagem: 'Oi Joao!', alternativa: 'Oi Joao, de novo!'
+    estagio: 'frio', situacaoAtual: 'x', objetivo: 'y', estrategia: 'z',
+    oQueEvitar: 'w', mensagem: 'Oi Ana!', alternativa: 'Oi Ana, de novo!'
   };
   const saved = await saveProspect(
-    { empresa: 'Acme', segmento: 'SaaS', contato: 'Joao', cargo: 'CEO' },
+    { empresa: 'Acme', segmento: 'SaaS', contato: 'Ana', cargo: 'CEO', info: 'nota', site: 'acme.com' },
     analysis
   );
+  createdLeadIds.push(saved.id);
 
-  assert.match(saved.id, /^prosp_/);
-  assert.equal(saved.status, 'frio');
-
-  const all = await getAllProspects();
-  assert.equal(all.length, 1);
-  assert.equal(all[0].id, saved.id);
-  assert.equal(all[0].empresa, 'Acme');
+  assert.ok(saved.id);
+  assert.equal(saved.empresa, 'Acme');
+  assert.equal(saved.segmento, 'SaaS');
+  assert.equal(saved.contato, 'Ana');
+  assert.equal(saved.cargo, 'CEO');
+  assert.equal(saved.info, 'nota');
+  assert.equal(saved.site, 'acme.com');
+  assert.ok(saved.dateCreated);
 });
 
 test('getProspect returns metadata merged with history and analyses', async () => {
   const saved = await saveProspect(
-    { empresa: 'Beta', segmento: 'Consultoria', contato: 'Maria', cargo: 'Diretora' },
-    { mensagem: 'Oi Maria!' }
+    { empresa: 'Beta', segmento: 'Consultoria', contato: 'Bia', cargo: 'Diretora' },
+    { estagio: 'frio', mensagem: 'Oi Bia!' }
   );
+  createdLeadIds.push(saved.id);
 
   const prospect = await getProspect(saved.id);
 
   assert.equal(prospect.empresa, 'Beta');
   assert.equal(prospect.historico.length, 1);
   assert.equal(prospect.historico[0].tipo, 'outgoing');
-  assert.equal(prospect.historico[0].conteudo, 'Oi Maria!');
+  assert.equal(prospect.historico[0].conteudo, 'Oi Bia!');
   assert.equal(prospect.analises.length, 1);
+  assert.equal(prospect.analises[0].estagio, 'frio');
 });
 
 test('getProspect throws PROSPECT_NOT_FOUND for an unknown id', async () => {
-  await assert.rejects(() => getProspect('prosp_does_not_exist'), /PROSPECT_NOT_FOUND/);
+  await assert.rejects(
+    () => getProspect('00000000-0000-0000-0000-000000000000'),
+    /PROSPECT_NOT_FOUND/
+  );
+});
+
+test('getProspect throws PROSPECT_NOT_FOUND (not a raw DB error) for a malformed id', async () => {
+  await assert.rejects(
+    () => getProspect('not-a-valid-uuid'),
+    /PROSPECT_NOT_FOUND/
+  );
 });
 
 test('addToHistory appends the incoming reply, the next message, and the analysis', async () => {
   const saved = await saveProspect(
-    { empresa: 'Gamma', segmento: 'Educação', contato: 'Ana', cargo: 'Coord' },
-    { mensagem: 'Oi Ana!' }
+    { empresa: 'Gamma', segmento: 'Educação', contato: 'Caio', cargo: 'Coord' },
+    { estagio: 'frio', mensagem: 'Oi Caio!' }
   );
+  createdLeadIds.push(saved.id);
 
   await addToHistory(saved.id, 'Quero saber mais', {
-    proximaMensagem: 'Legal! Posso te mostrar em 10min?',
-    ondeEstamos: 'Frio → Curioso'
+    estagioAtual: 'interessado',
+    proximaMensagem: 'Legal! Posso te mostrar em 10min?'
   });
 
   const prospect = await getProspect(saved.id);
@@ -88,27 +96,29 @@ test('addToHistory appends the incoming reply, the next message, and the analysi
   assert.equal(prospect.historico[2].tipo, 'outgoing');
   assert.equal(prospect.historico[2].conteudo, 'Legal! Posso te mostrar em 10min?');
   assert.equal(prospect.analises.length, 2);
+  assert.equal(prospect.analises[1].estagioAtual, 'interessado');
 });
 
 test('addToHistory throws PROSPECT_NOT_FOUND for an unknown id', async () => {
   await assert.rejects(
-    () => addToHistory('prosp_does_not_exist', 'oi', {}),
+    () => addToHistory('00000000-0000-0000-0000-000000000000', 'oi', {}),
     /PROSPECT_NOT_FOUND/
   );
 });
 
-test('getAllProspectsWithPipeline enriches each index entry with historico and analises', async () => {
+test('getAllProspects and getAllProspectsWithPipeline include a saved prospect', async () => {
   const saved = await saveProspect(
-    { empresa: 'Delta', segmento: 'Varejo', contato: 'Bruno', cargo: 'Sócio' },
-    { mensagem: 'Oi Bruno!', estagio: 'frio' }
+    { empresa: 'Delta', segmento: 'Varejo', contato: 'Duda', cargo: 'Sócia' },
+    { estagio: 'frio', mensagem: 'Oi Duda!' }
   );
+  createdLeadIds.push(saved.id);
 
-  const enriched = await getAllProspectsWithPipeline();
-  const entry = enriched.find(p => p.id === saved.id);
+  const all = await getAllProspects();
+  assert.ok(all.some(p => p.id === saved.id && p.empresa === 'Delta'));
 
+  const withPipeline = await getAllProspectsWithPipeline();
+  const entry = withPipeline.find(p => p.id === saved.id);
   assert.ok(entry);
-  assert.equal(entry.empresa, 'Delta');
   assert.equal(entry.historico.length, 1);
-  assert.equal(entry.historico[0].tipo, 'outgoing');
   assert.equal(entry.analises.length, 1);
 });

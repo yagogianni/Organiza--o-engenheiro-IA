@@ -1,19 +1,13 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'fs/promises';
-import os from 'os';
-import path from 'path';
 import express from 'express';
 import apiRoutes from '../src/routes/api.js';
-import { initializeDataDir, saveProspect } from '../src/services/storage.js';
+import { saveProspect } from '../src/services/storage.js';
 
-let server, baseUrl, tmpDir;
+let server, baseUrl;
+const createdLeadIds = [];
 
 before(async () => {
-  tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'prospec-api-test-'));
-  process.env.DATA_DIR = tmpDir;
-  await initializeDataDir();
-
   const app = express();
   app.use(express.json());
   app.use('/api', apiRoutes);
@@ -23,9 +17,12 @@ before(async () => {
 });
 
 after(async () => {
-  delete process.env.DATA_DIR;
   await new Promise(resolve => server.close(resolve));
-  await fs.rm(tmpDir, { recursive: true, force: true });
+  if (createdLeadIds.length > 0) {
+    const { createClient } = await import('@supabase/supabase-js');
+    const client = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+    await client.from('leads').delete().in('id', createdLeadIds);
+  }
 });
 
 test('POST /analyze returns 400 when required fields are missing', async () => {
@@ -50,32 +47,41 @@ test('POST /continue returns 400 when resposta is missing', async () => {
   assert.match(body.error, /Resposta do prospect é obrigatória/);
 });
 
-test('GET /prospects returns an empty array when no prospects exist', async () => {
+test('GET /prospects returns an array', async () => {
   const res = await fetch(`${baseUrl}/prospects`);
   assert.equal(res.status, 200);
   const body = await res.json();
-  assert.deepEqual(body, []);
+  assert.ok(Array.isArray(body));
 });
 
-test('GET /prospect/:id returns 404 for an unknown id', async () => {
-  const res = await fetch(`${baseUrl}/prospect/prosp_does_not_exist`);
+test('GET /prospect/:id returns 404 for a well-formed but unknown id', async () => {
+  const res = await fetch(`${baseUrl}/prospect/00000000-0000-0000-0000-000000000000`);
   assert.equal(res.status, 404);
   const body = await res.json();
   assert.match(body.error, /não encontrado/);
 });
 
-test('GET /prospects includes a computed pipeline stage for each prospect', async () => {
-  await saveProspect(
+test('GET /prospect/:id returns 404 (not 500) for a malformed id', async () => {
+  const res = await fetch(`${baseUrl}/prospect/not-a-valid-uuid`);
+  assert.equal(res.status, 404);
+  const body = await res.json();
+  assert.match(body.error, /não encontrado/);
+});
+
+test('GET /prospects includes a computed pipeline stage for a created prospect', async () => {
+  const saved = await saveProspect(
     { empresa: 'Echo Corp', segmento: 'Educação', contato: 'Rita', cargo: 'Diretora' },
     { mensagem: 'Oi Rita!', estagio: 'frio' }
   );
+  createdLeadIds.push(saved.id);
 
   const res = await fetch(`${baseUrl}/prospects`);
   const body = await res.json();
 
-  assert.equal(body.length, 1);
-  assert.equal(body[0].pipeline.stage, 'abordado');
-  assert.equal(body[0].historico, undefined);
+  const entry = body.find(p => p.id === saved.id);
+  assert.ok(entry);
+  assert.equal(entry.pipeline.stage, 'abordado');
+  assert.equal(entry.historico, undefined);
 });
 
 test('GET /prospect/:id includes a computed pipeline stage', async () => {
@@ -83,6 +89,7 @@ test('GET /prospect/:id includes a computed pipeline stage', async () => {
     { empresa: 'Foxtrot', segmento: 'Financeiro', contato: 'Caio', cargo: 'CFO' },
     { mensagem: 'Oi Caio!', estagio: 'frio' }
   );
+  createdLeadIds.push(saved.id);
 
   const res = await fetch(`${baseUrl}/prospect/${saved.id}`);
   const body = await res.json();

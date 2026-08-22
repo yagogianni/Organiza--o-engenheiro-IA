@@ -1,164 +1,233 @@
-// src/services/storage.js - Local Storage (JSON5 Files)
-import fs from 'fs/promises';
-import path from 'path';
-import JSON5 from 'json5';
-import { generateProspectId, getFormattedTimestamp } from '../utils/id-generator.js';
+// src/services/storage.js - Supabase-backed persistence
+import { createClient } from '@supabase/supabase-js';
+import { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } from '../config.js';
 
-function getDataDir() {
-  return process.env.DATA_DIR || './data';
-}
-
-function indexFile() {
-  return path.join(getDataDir(), 'prospects.json5');
-}
-
-function prospectDir(id) {
-  return path.join(getDataDir(), id);
-}
-
-function metadataFile(id) {
-  return path.join(prospectDir(id), 'metadata.json5');
-}
-
-function historyFile(id) {
-  return path.join(prospectDir(id), 'history.json5');
-}
-
-function analysesFile(id) {
-  return path.join(prospectDir(id), 'analyses.json5');
-}
-
-async function readJSON5(filePath, fallback) {
-  try {
-    const raw = await fs.readFile(filePath, 'utf-8');
-    return JSON5.parse(raw);
-  } catch (error) {
-    if (error.code === 'ENOENT') return fallback;
-    throw error;
+let client;
+function getClient() {
+  if (!client) {
+    client = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
   }
-}
-
-async function writeJSON5(filePath, data) {
-  await fs.writeFile(filePath, JSON5.stringify(data, null, 2), 'utf-8');
+  return client;
 }
 
 /**
- * Verifica se pasta de dados existe e cria se necessário, junto com o índice
+ * No-op: as tabelas do Supabase já existem (criadas via migration). Mantido
+ * para o startup de src/index.js não precisar mudar.
  */
 export async function initializeDataDir() {
-  await fs.mkdir(getDataDir(), { recursive: true });
-  const index = await readJSON5(indexFile(), null);
-  if (!index) {
-    await writeJSON5(indexFile(), { prospects: [] });
-  }
+  // Intencionalmente vazio - o schema agora vive em migrations do Supabase.
 }
 
 /**
- * Lê todos os prospects (índice resumido)
+ * Lê todos os leads (índice resumido, sem histórico/análises)
  */
 export async function getAllProspects() {
-  const index = await readJSON5(indexFile(), { prospects: [] });
-  return index.prospects;
+  const { data, error } = await getClient()
+    .from('leads')
+    .select('id, company_name, name, role, niche, created_at')
+    .order('created_at', { ascending: true });
+  if (error) throw new Error(error.message);
+
+  return data.map(lead => ({
+    id: lead.id,
+    empresa: lead.company_name,
+    contato: lead.name,
+    cargo: lead.role,
+    segmento: lead.niche,
+    status: 'frio',
+    dateCreated: lead.created_at
+  }));
+}
+
+async function fetchHistoricoAndAnalises(leadId) {
+  const client = getClient();
+
+  const { data: messages, error: messagesError } = await client
+    .from('messages')
+    .select('created_at, direction, content')
+    .eq('lead_id', leadId)
+    .order('created_at', { ascending: true });
+  if (messagesError) throw new Error(messagesError.message);
+
+  const { data: events, error: eventsError } = await client
+    .from('automation_events')
+    .select('created_at, event_type, payload')
+    .eq('lead_id', leadId)
+    .in('event_type', ['INITIAL_MESSAGE_SENT', 'ANALYSIS_GENERATED'])
+    .order('created_at', { ascending: true });
+  if (eventsError) throw new Error(eventsError.message);
+
+  return {
+    historico: messages.map(m => ({
+      data: m.created_at,
+      tipo: m.direction === 'OUTBOUND' ? 'outgoing' : 'incoming',
+      conteudo: m.content
+    })),
+    analises: events.map(e => ({ date: e.created_at, ...e.payload }))
+  };
 }
 
 /**
- * Lê todos os prospects já enriquecidos com histórico e análises, para
+ * Lê todos os leads já enriquecidos com histórico e análises, para
  * permitir o cálculo do estágio do pipeline na camada de rotas
  */
 export async function getAllProspectsWithPipeline() {
-  const index = await readJSON5(indexFile(), { prospects: [] });
-  return Promise.all(index.prospects.map(async (entry) => {
-    const history = await readJSON5(historyFile(entry.id), { messages: [] });
-    const analyses = await readJSON5(analysesFile(entry.id), { analyses: [] });
-    return { ...entry, historico: history.messages, analises: analyses.analyses };
+  const prospects = await getAllProspects();
+  return Promise.all(prospects.map(async (p) => {
+    const { historico, analises } = await fetchHistoricoAndAnalises(p.id);
+    return { ...p, historico, analises };
   }));
 }
 
 /**
- * Lê um prospect específico, combinando metadata + histórico + análises
+ * Lê um lead específico, combinando dados + histórico + análises
  */
 export async function getProspect(id) {
-  const metadata = await readJSON5(metadataFile(id), null);
-  if (!metadata) {
-    throw new Error('PROSPECT_NOT_FOUND');
+  const { data: lead, error } = await getClient()
+    .from('leads')
+    .select('id, company_name, name, role, niche, website, notes, created_at')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) {
+    if (error.code === '22P02') throw new Error('PROSPECT_NOT_FOUND');
+    throw new Error(error.message);
   }
+  if (!lead) throw new Error('PROSPECT_NOT_FOUND');
 
-  const history = await readJSON5(historyFile(id), { messages: [] });
-  const analyses = await readJSON5(analysesFile(id), { analyses: [] });
+  const { historico, analises } = await fetchHistoricoAndAnalises(id);
 
   return {
-    id,
-    ...metadata,
-    historico: history.messages,
-    analises: analyses.analyses
+    id: lead.id,
+    empresa: lead.company_name,
+    segmento: lead.niche,
+    contato: lead.name,
+    cargo: lead.role,
+    info: lead.notes,
+    site: lead.website,
+    status: 'frio',
+    dateCreated: lead.created_at,
+    historico,
+    analises
   };
 }
 
 /**
- * Salva novo prospect: cria pasta, metadata, histórico inicial, primeira
- * análise, e atualiza o índice
+ * Salva novo lead: cria o lead, a conversa, a primeira mensagem, e o
+ * evento de auditoria da primeira análise
  */
 export async function saveProspect(prospectData, analysis) {
-  const id = generateProspectId();
-  const dateCreated = getFormattedTimestamp();
+  const client = getClient();
 
-  await fs.mkdir(prospectDir(id), { recursive: true });
+  const { data: lead, error: leadError } = await client
+    .from('leads')
+    .insert({
+      name: prospectData.contato,
+      company_name: prospectData.empresa,
+      niche: prospectData.segmento,
+      role: prospectData.cargo,
+      notes: prospectData.info || null,
+      website: prospectData.site || null,
+      source: 'manual',
+      status: 'WAITING_RESPONSE'
+    })
+    .select('id, company_name, name, role, niche, website, notes, created_at')
+    .single();
+  if (leadError) throw new Error(leadError.message);
 
-  const metadata = {
-    empresa: prospectData.empresa,
-    segmento: prospectData.segmento,
-    contato: prospectData.contato,
-    cargo: prospectData.cargo,
-    info: prospectData.info || '',
-    site: prospectData.site || '',
+  const { data: conversation, error: convError } = await client
+    .from('conversations')
+    .insert({ lead_id: lead.id, channel: 'manual', status: 'OPEN' })
+    .select('id')
+    .single();
+  if (convError) throw new Error(convError.message);
+
+  const { error: messageError } = await client
+    .from('messages')
+    .insert({
+      conversation_id: conversation.id,
+      lead_id: lead.id,
+      direction: 'OUTBOUND',
+      content: analysis.mensagem,
+      channel: 'manual'
+    });
+  if (messageError) throw new Error(messageError.message);
+
+  const { error: eventError } = await client
+    .from('automation_events')
+    .insert({ lead_id: lead.id, event_type: 'INITIAL_MESSAGE_SENT', payload: analysis });
+  if (eventError) throw new Error(eventError.message);
+
+  return {
+    id: lead.id,
+    empresa: lead.company_name,
+    segmento: lead.niche,
+    contato: lead.name,
+    cargo: lead.role,
+    info: lead.notes,
+    site: lead.website,
     status: 'frio',
-    dateCreated
+    dateCreated: lead.created_at
   };
-  await writeJSON5(metadataFile(id), metadata);
-
-  await writeJSON5(historyFile(id), {
-    messages: [{ data: dateCreated, tipo: 'outgoing', conteudo: analysis.mensagem }]
-  });
-
-  await writeJSON5(analysesFile(id), {
-    analyses: [{ date: dateCreated, ...analysis }]
-  });
-
-  const index = await readJSON5(indexFile(), { prospects: [] });
-  index.prospects.push({
-    id,
-    empresa: metadata.empresa,
-    contato: metadata.contato,
-    cargo: metadata.cargo,
-    segmento: metadata.segmento,
-    status: metadata.status,
-    dateCreated
-  });
-  await writeJSON5(indexFile(), index);
-
-  return { id, ...metadata };
 }
 
 /**
- * Registra a resposta recebida do prospect, a próxima mensagem enviada, e
+ * Registra a resposta recebida do lead, a próxima mensagem enviada, e
  * a análise correspondente
  */
 export async function addToHistory(id, resposta, analise) {
-  const metadata = await readJSON5(metadataFile(id), null);
-  if (!metadata) {
-    throw new Error('PROSPECT_NOT_FOUND');
+  const client = getClient();
+
+  const { data: lead, error: leadError } = await client
+    .from('leads')
+    .select('id')
+    .eq('id', id)
+    .maybeSingle();
+  if (leadError) {
+    if (leadError.code === '22P02') throw new Error('PROSPECT_NOT_FOUND');
+    throw new Error(leadError.message);
   }
+  if (!lead) throw new Error('PROSPECT_NOT_FOUND');
 
-  const dateNow = getFormattedTimestamp();
+  const { data: conversation, error: convError } = await client
+    .from('conversations')
+    .select('id')
+    .eq('lead_id', id)
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .single();
+  if (convError) throw new Error(convError.message);
 
-  const history = await readJSON5(historyFile(id), { messages: [] });
-  history.messages.push({ data: dateNow, tipo: 'incoming', conteudo: resposta });
+  const { error: incomingError } = await client
+    .from('messages')
+    .insert({
+      conversation_id: conversation.id,
+      lead_id: id,
+      direction: 'INBOUND',
+      content: resposta,
+      channel: 'manual'
+    });
+  if (incomingError) throw new Error(incomingError.message);
+
+  const { error: responseEventError } = await client
+    .from('automation_events')
+    .insert({ lead_id: id, event_type: 'RESPONSE_RECEIVED', payload: { content: resposta } });
+  if (responseEventError) throw new Error(responseEventError.message);
+
   if (analise.proximaMensagem) {
-    history.messages.push({ data: dateNow, tipo: 'outgoing', conteudo: analise.proximaMensagem });
+    const { error: outgoingError } = await client
+      .from('messages')
+      .insert({
+        conversation_id: conversation.id,
+        lead_id: id,
+        direction: 'OUTBOUND',
+        content: analise.proximaMensagem,
+        channel: 'manual'
+      });
+    if (outgoingError) throw new Error(outgoingError.message);
   }
-  await writeJSON5(historyFile(id), history);
 
-  const analyses = await readJSON5(analysesFile(id), { analyses: [] });
-  analyses.analyses.push({ date: dateNow, ...analise });
-  await writeJSON5(analysesFile(id), analyses);
+  const { error: analysisEventError } = await client
+    .from('automation_events')
+    .insert({ lead_id: id, event_type: 'ANALYSIS_GENERATED', payload: analise });
+  if (analysisEventError) throw new Error(analysisEventError.message);
 }
