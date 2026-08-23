@@ -57,6 +57,19 @@ Quando o "Mensagem Válida?" ou o "Ainda Elegível?" dá false, o fluxo
 simplesmente para ali para aquele lead (nenhum ramo de erro construído —
 o lead continua como estava e será reavaliado no próximo ciclo).
 
+## 2.1 Atualização — prompt System/User (2026-08-23)
+
+Depois do usuário notar (olhando o próprio node no n8n) que existe um campo
+separado de "System Message" no nó de IA, refatoramos o prompt: a persona +
+metodologia completa (Ícaro + Sobral) foi movida pro campo "System" (fixo,
+independente do lead), e o campo "Prompt (User Message)" ficou só com os
+dados variáveis do prospect + a instrução da tarefa. Achamos o valor certo
+pro tipo da mensagem (`SystemMessagePromptTemplate`) direto no código-fonte
+aberto do n8n (`promptUtils.ts` do pacote `@n8n/nodes-langchain`), depois de
+duas tentativas erradas (`"System"` e `"system"` minúsculo não são aceitos —
+o node compara contra o nome literal da classe LangChain). Reconfirmado
+funcionando com um novo teste completo.
+
 ## 3. Decisões de design
 
 - **Por que `messages` com `sent_at=null` em vez de um evento novo em
