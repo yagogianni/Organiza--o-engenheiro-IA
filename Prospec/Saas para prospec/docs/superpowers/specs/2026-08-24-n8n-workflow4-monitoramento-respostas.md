@@ -108,20 +108,38 @@ crítica do CLAUDE.md exige isso acontecer sem atraso.
   já visto nos Workflows 2/3), então o prompt da IA não via nada. Resolvido
   com o nó "Aggregate", que junta tudo num item só antes de montar o prompt.
 
-## 5. Fora de escopo
+## 5. Notificação no Telegram (2026-08-24)
+
+Quando o lead vira `HUMAN_REVIEW`, o nó "Notificar no Telegram" (HTTP
+Request pro `sendMessage` do Bot API do Telegram, token embutido igual ao
+padrão do Supabase) manda uma mensagem com empresa, contato, telefone, o
+que o lead respondeu, a classificação e a sugestão de resposta da IA — pro
+chat privado do usuário (bot "Prospec.IA Alertas" / `@Prospec_Alertas_bot`).
+Token e chat_id salvos no `.env` (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` —
+o chat_id foi obtido via `GET /getUpdates` da Bot API, depois do usuário
+mandar uma mensagem qualquer pro bot).
+
+Bug real encontrado e corrigido: o texto da notificação tem `\n` (quebra de
+linha) várias vezes — escrever isso à mão dentro do JSON do node causou uma
+camada de escape a menos (`\n` virou quebra de linha real no arquivo, em vez
+de continuar como os dois caracteres `\` `n`), quebrando a sintaxe do
+JavaScript que o n8n tenta avaliar. Resolvido gerando o node inteiro por
+script (Node.js), usando `String.fromCharCode(92)` pra montar o caractere de
+barra invertida sem ambiguidade, em vez de escrever `\n` à mão em um
+arquivo-texto.
+
+## 6. Fora de escopo
 
 - Envio automático de resposta — mesmo em `HUMAN_REVIEW`, o CLAUDE.md é
   explícito: "o sistema NÃO deve responder automaticamente." A sugestão de
-  resposta fica registrada no evento, pronta pra você ver no Prospec.IA.
-- Notificação instantânea (Telegram) quando um lead vira `HUMAN_REVIEW` —
-  combinado antes, ainda não construído. Próximo passo natural.
+  resposta fica registrada no evento e na notificação, pronta pra você usar.
 - Reativação de leads `RESTING` — isso é o Workflow 6.
 
-## 6. Teste
+## 7. Teste
 
-Simulei 3 mensagens recebidas via POST direto no webhook do n8n (mesmo
+Simulei mensagens recebidas via POST direto no webhook do n8n (mesmo
 formato que o Evolution manda de verdade, confirmado com uma mensagem real
-antes do teste), pra um lead de teste com histórico:
+antes do teste), pra leads de teste com histórico:
 
 - Mensagem demonstrando interesse ("Sim, tenho interesse, pode me mostrar
   como funciona? Qual o valor?") → classificação `INTERESTED`, lead virou
@@ -129,8 +147,12 @@ antes do teste), pra um lead de teste com histórico:
   resposta.
 - Mensagem de recusa ("Não tenho interesse, não me contate mais") → lead
   virou `NOT_INTERESTED`.
+- Mensagem com dúvida ("Interessante! Como funciona o processo, e qual o
+  investimento?") → classificação `QUESTION`, lead virou `HUMAN_REVIEW`, e a
+  notificação chegou de verdade no Telegram do usuário (confirmado por ele).
 - Confirmado que tráfego real do WhatsApp pessoal do usuário (grupo e
   conversas próprias) é corretamente filtrado antes de tocar em qualquer
-  lead — várias execuções reais pararam em "É um Lead Nosso?" ou antes.
+  lead — várias execuções reais pararam em "É um Lead Nosso?" ou antes,
+  inclusive durante os testes acima.
 
 Dados de teste removidos do Supabase depois da verificação.
