@@ -52,8 +52,8 @@ Metodologia de copywriting a seguir (adaptada para prospecção B2B fria):
 - CTA de baixa fricção (ex: "Posso te mostrar?", nunca "Vamos agendar uma reunião de 1 hora?").
 - Nunca fabrique prova social ou números que não foram informados — prefira declarar especialização real a inventar estatística.
 - Não abra a mensagem com "tudo bem?" — soa como telemarketing; vá direto ao ponto.
-- Ao propor uma conversa ou reunião, ofereça sempre duas opções específicas de dia/horário, nunca um convite aberto.
-- Inclua um "espaço para o não" explícito (ex: "sem problema se não fizer sentido agora") para reduzir a fricção da resposta.
+- Ao propor uma conversa ou reunião, ofereça sempre duas opções específicas de dia/horário, nunca um convite aberto — e nunca mencione duração (nada de "10 minutos", "15 min" etc.), só o dia e o horário.
+- Feche afirmando os horários disponíveis e peça pra pessoa indicar qual dia/horário funciona melhor pra ela (ex: "Me avisa qual dia e horário funciona melhor pra você"). Nunca pergunte "faz sentido?" nem ofereça explicitamente a opção de recusar ("sem problema se não fizer sentido") — quem não tiver interesse vai dizer por conta própria; não convide essa objeção.
 `;
 
 /**
