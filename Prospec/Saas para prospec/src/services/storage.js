@@ -24,7 +24,7 @@ export async function initializeDataDir() {
 export async function getAllProspects() {
   const { data, error } = await getClient()
     .from('leads')
-    .select('id, company_name, name, role, niche, created_at')
+    .select('id, company_name, name, role, niche, status, automation_enabled, created_at')
     .order('created_at', { ascending: true });
   if (error) throw new Error(error.message);
 
@@ -34,7 +34,8 @@ export async function getAllProspects() {
     contato: lead.name,
     cargo: lead.role,
     segmento: lead.niche,
-    status: 'frio',
+    status: lead.status,
+    automationEnabled: lead.automation_enabled,
     dateCreated: lead.created_at
   }));
 }
@@ -85,7 +86,7 @@ export async function getAllProspectsWithPipeline() {
 export async function getProspect(id) {
   const { data: lead, error } = await getClient()
     .from('leads')
-    .select('id, company_name, name, role, niche, website, notes, created_at')
+    .select('id, company_name, name, role, niche, website, notes, status, automation_enabled, created_at')
     .eq('id', id)
     .maybeSingle();
   if (error) {
@@ -104,7 +105,8 @@ export async function getProspect(id) {
     cargo: lead.role,
     info: lead.notes,
     site: lead.website,
-    status: 'frio',
+    status: lead.status,
+    automationEnabled: lead.automation_enabled,
     dateCreated: lead.created_at,
     historico,
     analises
@@ -130,7 +132,7 @@ export async function saveProspect(prospectData, analysis) {
       source: 'manual',
       status: 'WAITING_RESPONSE'
     })
-    .select('id, company_name, name, role, niche, website, notes, created_at')
+    .select('id, company_name, name, role, niche, website, notes, status, automation_enabled, created_at')
     .single();
   if (leadError) throw new Error(leadError.message);
 
@@ -165,7 +167,8 @@ export async function saveProspect(prospectData, analysis) {
     cargo: lead.role,
     info: lead.notes,
     site: lead.website,
-    status: 'frio',
+    status: lead.status,
+    automationEnabled: lead.automation_enabled,
     dateCreated: lead.created_at
   };
 }

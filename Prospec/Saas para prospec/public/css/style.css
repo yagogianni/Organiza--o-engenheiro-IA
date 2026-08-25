@@ -286,6 +286,83 @@ body {
   border-color: var(--error-color);
 }
 
+/* Painel (Todos os Leads) */
+.panel-subtitle {
+  color: var(--text-secondary, #666);
+  margin-top: -0.5rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+}
+
+.painel-table {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.painel-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.painel-table th {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  border-bottom: 2px solid var(--border-color, #ddd);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  color: var(--text-secondary, #666);
+}
+
+.painel-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color, #eee);
+  vertical-align: top;
+}
+
+.painel-row {
+  cursor: pointer;
+}
+
+.painel-row:hover {
+  background-color: var(--secondary-bg);
+}
+
+.painel-row--priority {
+  background-color: var(--error-bg);
+}
+
+.painel-row--priority:hover {
+  background-color: var(--error-bg);
+  filter: brightness(0.95);
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background-color: var(--primary-color-light);
+  color: var(--primary-color);
+  white-space: nowrap;
+}
+
+.status-badge--priority {
+  background-color: var(--error-color);
+  color: white;
+}
+
+.status-badge--resting,
+.status-badge--closed {
+  background-color: var(--warning-bg);
+  color: var(--warning-color);
+}
+
+.painel-tip {
+  font-size: 0.85rem;
+  color: var(--text-secondary, #666);
+}
+
 /* Analysis Sections */
 .analysis-section {
   margin-bottom: 2rem;

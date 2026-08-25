@@ -106,6 +106,118 @@ function switchTab(tabName, clickedBtn) {
   if (tabName === 'continuar-conversa') {
     loadProspectsList();
   }
+
+  // Load data if switching to the "all leads" panel
+  if (tabName === 'painel') {
+    loadPainel();
+  }
+}
+
+/**
+ * Human-readable labels for the automation status (leads.status).
+ * Leads whose status is in PRIORITY_STATUSES need the user's attention.
+ */
+const STATUS_LABELS = {
+  NEW: 'Novo',
+  READY_FOR_OUTREACH: 'Pronto pra abordar',
+  OUTREACH_ACTIVE: 'Sendo abordado',
+  WAITING_RESPONSE: 'Aguardando resposta',
+  FOLLOW_UP_1: 'Follow-up 1',
+  FOLLOW_UP_2: 'Follow-up 2',
+  FOLLOW_UP_3: 'Follow-up 3',
+  HUMAN_REVIEW: '🔴 Precisa de você',
+  ENGAGED: 'Engajado',
+  PAUSED: 'Pausado',
+  RESTING: 'Em descanso',
+  REACTIVATION: 'Reativação',
+  NOT_INTERESTED: 'Não interessado',
+  CLOSED: 'Encerrado'
+};
+
+const PRIORITY_STATUSES = new Set(['HUMAN_REVIEW']);
+
+/**
+ * Load and render the "Todos os Leads" panel: every lead, priority
+ * (HUMAN_REVIEW) ones first, with their automation status and pipeline tip.
+ */
+async function loadPainel() {
+  console.log('📋 Carregando painel de leads...');
+  const container = document.getElementById('painelTable');
+  if (!container) return;
+
+  try {
+    const prospects = await getProspects();
+    renderPainel(prospects);
+  } catch (error) {
+    console.error('❌ Erro ao carregar painel:', error);
+    container.innerHTML = '<p class="empty-message">Erro ao carregar os leads.</p>';
+  }
+}
+
+function renderPainel(prospects) {
+  const container = document.getElementById('painelTable');
+  if (!container) return;
+
+  if (!prospects || prospects.length === 0) {
+    container.innerHTML = '<p class="empty-message">Nenhum lead ainda.</p>';
+    return;
+  }
+
+  const sorted = [...prospects].sort((a, b) => {
+    const aPriority = PRIORITY_STATUSES.has(a.status) ? 0 : 1;
+    const bPriority = PRIORITY_STATUSES.has(b.status) ? 0 : 1;
+    return aPriority - bPriority;
+  });
+
+  const rows = sorted.map(p => {
+    const isPriority = PRIORITY_STATUSES.has(p.status);
+    const statusLabel = STATUS_LABELS[p.status] || p.status || '-';
+    const statusClass = isPriority ? 'status-badge--priority'
+      : (p.status === 'RESTING' || p.status === 'CLOSED' || p.status === 'NOT_INTERESTED') ? 'status-badge--resting'
+      : '';
+    const pipelineText = p.pipeline ? `${p.pipeline.label} — ${p.pipeline.tip}` : '-';
+
+    return `
+      <tr class="painel-row ${isPriority ? 'painel-row--priority' : ''}" data-id="${p.id}">
+        <td>${p.empresa}</td>
+        <td>${p.contato || '-'}</td>
+        <td>${p.segmento || '-'}</td>
+        <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
+        <td class="painel-tip">${pipelineText}</td>
+      </tr>
+    `;
+  }).join('');
+
+  container.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Empresa</th>
+          <th>Contato</th>
+          <th>Nicho</th>
+          <th>Status</th>
+          <th>O que fazer</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+
+  container.querySelectorAll('.painel-row').forEach(row => {
+    row.addEventListener('click', () => openLeadFromPainel(row.dataset.id));
+  });
+}
+
+/**
+ * Jump from the "Todos os Leads" panel to a specific lead's conversation,
+ * switching tabs and loading it exactly as if picked from the Pipeline list.
+ */
+async function openLeadFromPainel(prospectId) {
+  const targetBtn = document.querySelector('.tab-btn[data-tab="continuar-conversa"]');
+  switchTab('continuar-conversa', targetBtn);
+  await loadProspectsList();
+  const item = document.querySelector(`.prospect-item[data-id="${prospectId}"]`);
+  await selectProspect(prospectId, item);
 }
 
 /**
