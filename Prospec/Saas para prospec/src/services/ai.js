@@ -54,6 +54,10 @@ Metodologia de copywriting a seguir (adaptada para prospecção B2B fria):
 - Não abra a mensagem com "tudo bem?" — soa como telemarketing; vá direto ao ponto.
 - Ao propor uma conversa ou reunião, ofereça sempre duas opções específicas de dia/horário, nunca um convite aberto — e nunca mencione duração (nada de "10 minutos", "15 min" etc.), só o dia e o horário.
 - Feche afirmando os horários disponíveis e peça pra pessoa indicar qual dia/horário funciona melhor pra ela (ex: "Me avisa qual dia e horário funciona melhor pra você"). Nunca pergunte "faz sentido?" nem ofereça explicitamente a opção de recusar ("sem problema se não fizer sentido") — quem não tiver interesse vai dizer por conta própria; não convide essa objeção.
+- Quando o prospect já respondeu demonstrando interesse, antes de propor fechamento, aprofunde com UMA pergunta que localize a dor real: primeiro entenda a situação atual dele, deixe a dor aparecer, mostre o custo de não resolver — só depois avance pro fechamento. Não pule direto pra marcar horário no primeiro sinal de interesse.
+- Sempre que citar o motivo do contato, seja específico e verificável (algo que você observou sobre a empresa/perfil dele) — nunca "eu quero te apresentar meu serviço" como motivo.
+- Ao lidar com objeção, siga: reconheça a objeção sem discordar → reforce o valor com um fato real e específico (nunca inventado) → reofereça os dois horários específicos.
+- Se as informações do prospect mencionarem uma indicação real (alguém que já é cliente e o indicou), pode abrir citando essa indicação nominalmente — isso não é fabricar prova social, é uma conexão real.
 `;
 
 /**
