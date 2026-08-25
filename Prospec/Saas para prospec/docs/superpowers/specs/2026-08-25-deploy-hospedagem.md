@@ -82,6 +82,18 @@ compose up -d --build` no diretório do projeto no VPS.
 3. Testar o fluxo completo (ver leads, gerar mensagem, pipeline) contra o
    app rodando no VPS, não mais local.
 
+**Status: testado e funcionando (2026-08-25).** `curl -I` confirma HTTPS
+válido e `401` sem credencial; com `yago.gianni`/senha correta, `200` e
+`/api/prospects` responde `[]` (bate com o banco real, vazio). Container
+`prospec-prospec-1` de pé, sem erro nos logs.
+
+**Bug real encontrado e corrigido durante o teste**: o Dockerfile usava
+`node:20-alpine`, mas a versão instalada do `@supabase/supabase-js`
+(2.112.3) exige WebSocket nativo do Node 22+ — a API quebrava em tempo de
+execução ("native WebSocket not found") mesmo com o build do Docker tendo
+passado sem erro (só um aviso). Corrigido trocando pra `node:22-alpine`,
+reconstruído e reconfirmado funcionando.
+
 ## 7. Fora de escopo
 
 - Repositório git remoto / CI-CD automatizado — deploys futuros continuam
