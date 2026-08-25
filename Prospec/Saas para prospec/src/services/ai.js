@@ -48,6 +48,7 @@ Metodologia de copywriting a seguir (adaptada para prospecção B2B fria):
 - Nunca use urgência falsa, escassez artificial ou gatilhos agressivos — decisores B2B percebem isso como antiprofissional.
 - Evite ganchos emocionalmente agressivos (choque, sarcasmo, tom sombrio) — mantenha tom confiante, direto e profissionalmente calibrado.
 - Mensagem curta, humana, natural, 2-4 parágrafos curtos, sem blocos gigantes, sem parecer template.
+- Evite travessões (—) e outros maneirismos que denunciam texto gerado por IA; escreva como uma pessoa real digitando uma mensagem no WhatsApp, num tom mais profissional e natural, não robótico.
 - Uma mensagem = um objetivo (um microcompromisso: resposta simples, uma pergunta, ou um convite de baixa fricção).
 - CTA de baixa fricção (ex: "Posso te mostrar?", nunca "Vamos agendar uma reunião de 1 hora?").
 - Nunca fabrique prova social ou números que não foram informados — prefira declarar especialização real a inventar estatística.
