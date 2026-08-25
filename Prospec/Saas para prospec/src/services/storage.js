@@ -175,6 +175,37 @@ export async function saveProspect(prospectData, analysis) {
 }
 
 /**
+ * Apaga um lead e todo o histórico relacionado (mensagens, conversas,
+ * eventos) - usado quando um lead não faz mais parte da prospecção
+ */
+export async function deleteProspect(id) {
+  const client = getClient();
+
+  const { data: lead, error: leadError } = await client
+    .from('leads')
+    .select('id')
+    .eq('id', id)
+    .maybeSingle();
+  if (leadError) {
+    if (leadError.code === '22P02') throw new Error('PROSPECT_NOT_FOUND');
+    throw new Error(leadError.message);
+  }
+  if (!lead) throw new Error('PROSPECT_NOT_FOUND');
+
+  const { error: eventsError } = await client.from('automation_events').delete().eq('lead_id', id);
+  if (eventsError) throw new Error(eventsError.message);
+
+  const { error: messagesError } = await client.from('messages').delete().eq('lead_id', id);
+  if (messagesError) throw new Error(messagesError.message);
+
+  const { error: conversationsError } = await client.from('conversations').delete().eq('lead_id', id);
+  if (conversationsError) throw new Error(conversationsError.message);
+
+  const { error: deleteLeadError } = await client.from('leads').delete().eq('id', id);
+  if (deleteLeadError) throw new Error(deleteLeadError.message);
+}
+
+/**
  * Registra a resposta recebida do lead, a próxima mensagem enviada, e
  * a análise correspondente
  */

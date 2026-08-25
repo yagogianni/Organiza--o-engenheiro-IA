@@ -1,7 +1,7 @@
 // public/js/app.js - Main Application Logic
 // Status: FASE 1 - Implemented
 
-import { analyzeNewProspect, continueConversation, getProspects, getProspect } from './api.js';
+import { analyzeNewProspect, continueConversation, getProspects, getProspect, deleteProspect } from './api.js';
 import { getTheme, saveTheme } from './storage-local.js';
 
 console.log('🎯 PROSPEC.AI - App Loading...');
@@ -184,6 +184,7 @@ function renderPainel(prospects) {
         <td>${p.segmento || '-'}</td>
         <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
         <td class="painel-tip">${pipelineText}</td>
+        <td><button class="btn-delete-lead" data-id="${p.id}" data-empresa="${p.empresa}" title="Excluir lead">🗑️</button></td>
       </tr>
     `;
   }).join('');
@@ -197,6 +198,7 @@ function renderPainel(prospects) {
           <th>Nicho</th>
           <th>Status</th>
           <th>O que fazer</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
@@ -206,6 +208,30 @@ function renderPainel(prospects) {
   container.querySelectorAll('.painel-row').forEach(row => {
     row.addEventListener('click', () => openLeadFromPainel(row.dataset.id));
   });
+
+  container.querySelectorAll('.btn-delete-lead').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      handleDeleteLead(btn.dataset.id, btn.dataset.empresa);
+    });
+  });
+}
+
+/**
+ * Delete a lead (and its history) after confirmation, then refresh the panel.
+ */
+async function handleDeleteLead(prospectId, empresaNome) {
+  const confirmed = confirm(`Excluir "${empresaNome}"? Isso apaga o lead e todo o histórico de conversa. Não pode ser desfeito.`);
+  if (!confirmed) return;
+
+  try {
+    await deleteProspect(prospectId);
+    await loadPainel();
+    showNotification(`"${empresaNome}" excluído.`, 'success');
+  } catch (error) {
+    console.error('❌ Erro ao excluir lead:', error);
+    showNotification('Erro ao excluir o lead.', 'error');
+  }
 }
 
 /**

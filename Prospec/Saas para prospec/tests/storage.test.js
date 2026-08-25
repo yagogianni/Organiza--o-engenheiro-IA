@@ -9,7 +9,8 @@ import {
   getAllProspectsWithPipeline,
   getProspect,
   saveProspect,
-  addToHistory
+  addToHistory,
+  deleteProspect
 } from '../src/services/storage.js';
 
 const createdLeadIds = [];
@@ -102,6 +103,24 @@ test('addToHistory appends the incoming reply, the next message, and the analysi
 test('addToHistory throws PROSPECT_NOT_FOUND for an unknown id', async () => {
   await assert.rejects(
     () => addToHistory('00000000-0000-0000-0000-000000000000', 'oi', {}),
+    /PROSPECT_NOT_FOUND/
+  );
+});
+
+test('deleteProspect removes the lead and its history', async () => {
+  const saved = await saveProspect(
+    { empresa: 'Zulu', segmento: 'Logística', contato: 'Zeca', cargo: 'Sócio', telefone: '11977776666' },
+    { estagio: 'frio', mensagem: 'Oi Zeca!' }
+  );
+
+  await deleteProspect(saved.id);
+
+  await assert.rejects(() => getProspect(saved.id), /PROSPECT_NOT_FOUND/);
+});
+
+test('deleteProspect throws PROSPECT_NOT_FOUND for an unknown id', async () => {
+  await assert.rejects(
+    () => deleteProspect('00000000-0000-0000-0000-000000000000'),
     /PROSPECT_NOT_FOUND/
   );
 });

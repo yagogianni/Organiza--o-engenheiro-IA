@@ -7,7 +7,8 @@ import {
   saveProspect,
   getProspect,
   getAllProspectsWithPipeline,
-  addToHistory
+  addToHistory,
+  deleteProspect
 } from '../services/storage.js';
 import { validateNewProspect, validateContinueInput } from '../utils/validators.js';
 
@@ -74,6 +75,22 @@ router.get('/prospect/:id', async (req, res) => {
   try {
     const prospect = await getProspect(req.params.id);
     res.json({ ...prospect, pipeline: computePipelineStage(prospect) });
+  } catch (error) {
+    if (error.message === 'PROSPECT_NOT_FOUND') {
+      return res.status(404).json({ error: 'Prospect não encontrado' });
+    }
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * DELETE /api/prospect/:id
+ * Remove um lead e todo o histórico relacionado
+ */
+router.delete('/prospect/:id', async (req, res) => {
+  try {
+    await deleteProspect(req.params.id);
+    res.json({ success: true });
   } catch (error) {
     if (error.message === 'PROSPECT_NOT_FOUND') {
       return res.status(404).json({ error: 'Prospect não encontrado' });

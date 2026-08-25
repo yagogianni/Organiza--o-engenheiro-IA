@@ -72,3 +72,12 @@ export async function getProspect(id) {
   console.log(`📡 Calling API: GET /api/prospect/${id}`);
   return fetchAPI(`/prospect/${id}`);
 }
+
+/**
+ * Delete a prospect and its history
+ * DELETE /api/prospect/:id
+ */
+export async function deleteProspect(id) {
+  console.log(`📡 Calling API: DELETE /api/prospect/${id}`);
+  return fetchAPI(`/prospect/${id}`, { method: 'DELETE' });
+}
