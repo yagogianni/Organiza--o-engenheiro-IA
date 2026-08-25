@@ -21,15 +21,22 @@ test('getFormattedTimestamp returns a valid ISO string', () => {
 
 test('validateNewProspect accepts a complete payload', () => {
   assert.equal(
-    validateNewProspect({ empresa: 'Acme', contato: 'Joao', cargo: 'CEO', segmento: 'SaaS' }),
+    validateNewProspect({ empresa: 'Acme', contato: 'Joao', cargo: 'CEO', segmento: 'SaaS', telefone: '11999998888' }),
     true
   );
 });
 
 test('validateNewProspect rejects missing empresa', () => {
   assert.throws(
-    () => validateNewProspect({ contato: 'Joao', cargo: 'CEO', segmento: 'SaaS' }),
+    () => validateNewProspect({ contato: 'Joao', cargo: 'CEO', segmento: 'SaaS', telefone: '11999998888' }),
     /Empresa é obrigatória/
+  );
+});
+
+test('validateNewProspect rejects missing telefone', () => {
+  assert.throws(
+    () => validateNewProspect({ empresa: 'Acme', contato: 'Joao', cargo: 'CEO', segmento: 'SaaS' }),
+    /Telefone é obrigatório/
   );
 });
 

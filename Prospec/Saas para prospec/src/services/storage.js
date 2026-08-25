@@ -127,6 +127,7 @@ export async function saveProspect(prospectData, analysis) {
       company_name: prospectData.empresa,
       niche: prospectData.segmento,
       role: prospectData.cargo,
+      phone: prospectData.telefone,
       notes: prospectData.info || null,
       website: prospectData.site || null,
       source: 'manual',
