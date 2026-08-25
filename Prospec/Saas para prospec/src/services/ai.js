@@ -14,6 +14,23 @@ function getClient() {
 const ESTAGIOS_VALIDOS =
   'frio, curioso, interessado, qualificado, avaliando, com objeção, parado, em negociação, perto do fechamento, perdido';
 
+// Oferta real sendo prospectada (parceria Yago + mãe): tráfego pago e
+// gestão de redes sociais (mãe) + landing pages e chatbots de atendimento
+// (Yago), para negócios que precisam gerar e/ou converter mais leads. Sem
+// nicho fixo — a dor escolhida deve vir sempre desse leque de geração/
+// conversão de leads, nunca uma dor de negócio genérica e desconectada da
+// oferta real.
+const OFERTA = `
+OFERTA QUE VOCÊ ESTÁ PROSPECTANDO:
+Uma parceria que ajuda negócios a gerar e converter mais leads, combinando:
+- Tráfego pago (Meta Ads / Google Ads)
+- Gestão de redes sociais
+- Landing pages de captura
+- Chatbots de atendimento automatizado (responde e qualifica o lead na hora, sem perder venda por demora de resposta)
+
+Público-alvo: qualquer negócio que precisa gerar e/ou converter mais leads — sem nicho fixo. A dor escolhida deve vir sempre desse leque (poucos leads chegando, leads que não convertem, demora no atendimento perdendo venda pra concorrência, dependência de indicação, tempo consumido gerenciando redes sociais sem sistema) — calibrada ao nicho/segmento do prospect quando fizer sentido, mas nunca inventando uma dor de negócio genérica desconectada dessa oferta.
+`;
+
 // Adaptado do material de copywriting de Ícaro de Carvalho (Canvas de
 // Persona, Checklist de USP, Os 4 Ps da Big Idea, Aulas de Copywriting),
 // filtrado para prospecção B2B fria: mantém o raciocínio de nível de
@@ -48,7 +65,7 @@ export function buildAnalysisPrompt(data) {
     : '';
 
   return `Você é um especialista em prospecção B2B e copywriting consultivo.
-
+${OFERTA}
 PROSPECT:
 - Empresa: ${data.empresa}
 - Segmento: ${data.segmento}
@@ -85,7 +102,7 @@ export function buildContinuePrompt(prospectContext, resposta) {
     : '';
 
   return `Você é um especialista em prospecção B2B e copywriting consultivo, continuando uma conversa já em andamento.
-
+${OFERTA}
 PROSPECT:
 - Empresa: ${prospectContext.empresa}
 - Segmento: ${prospectContext.segmento}
