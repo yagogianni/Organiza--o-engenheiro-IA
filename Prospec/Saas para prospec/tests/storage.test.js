@@ -45,6 +45,19 @@ test('saveProspect creates a lead, conversation, message, and event; returns the
   assert.ok(saved.dateCreated);
 });
 
+test('saveProspect normalizes phone to digits-only with country code', async () => {
+  const saved = await saveProspect(
+    { empresa: 'Normaliza Telefone', segmento: 'Saúde', contato: 'Teste', cargo: 'Dono', telefone: '51 9898-9889' },
+    { estagio: 'frio', mensagem: 'Oi!' }
+  );
+  createdLeadIds.push(saved.id);
+
+  const { createClient } = await import('@supabase/supabase-js');
+  const client = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+  const { data } = await client.from('leads').select('phone').eq('id', saved.id).single();
+  assert.equal(data.phone, '555198989889');
+});
+
 test('getProspect returns metadata merged with history and analyses', async () => {
   const saved = await saveProspect(
     { empresa: 'Beta', segmento: 'Consultoria', contato: 'Bia', cargo: 'Diretora' },
@@ -98,6 +111,31 @@ test('addToHistory appends the incoming reply, the next message, and the analysi
   assert.equal(prospect.historico[2].conteudo, 'Legal! Posso te mostrar em 10min?');
   assert.equal(prospect.analises.length, 2);
   assert.equal(prospect.analises[1].estagioAtual, 'interessado');
+});
+
+test('addToHistory stamps sent_at on the generated message so Motor de Envio never auto-sends it', async () => {
+  const saved = await saveProspect(
+    { empresa: 'Sem Auto Envio', segmento: 'Educação', contato: 'Duda', cargo: 'Coord' },
+    { estagio: 'frio', mensagem: 'Oi Duda!' }
+  );
+  createdLeadIds.push(saved.id);
+
+  await addToHistory(saved.id, 'Quero saber mais', {
+    estagioAtual: 'interessado',
+    proximaMensagem: 'Legal! Posso te mostrar?'
+  });
+
+  const { createClient } = await import('@supabase/supabase-js');
+  const client = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+  const { data: conv } = await client.from('conversations').select('id').eq('lead_id', saved.id).single();
+  const { data: msgs } = await client.from('messages')
+    .select('direction, content, sent_at')
+    .eq('conversation_id', conv.id)
+    .order('created_at', { ascending: true });
+
+  const proximaMsg = msgs.find(m => m.direction === 'OUTBOUND' && m.content === 'Legal! Posso te mostrar?');
+  assert.ok(proximaMsg, 'próxima mensagem deveria ter sido registrada');
+  assert.ok(proximaMsg.sent_at, 'sent_at deveria estar preenchido para não entrar na fila do Motor de Envio');
 });
 
 test('addToHistory throws PROSPECT_NOT_FOUND for an unknown id', async () => {

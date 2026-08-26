@@ -11,6 +11,20 @@ function getClient() {
 }
 
 /**
+ * Normaliza telefone pra dígitos puros com DDI, pra bater com o formato
+ * usado no JID do WhatsApp (usado pelo Workflow 4 pra reconhecer respostas
+ * de leads existentes via sufixo dos últimos 8 dígitos)
+ */
+function normalizePhone(raw) {
+  if (!raw) return raw;
+  const digits = String(raw).replace(/\D/g, '');
+  if (!digits.startsWith('55') && (digits.length === 10 || digits.length === 11)) {
+    return '55' + digits;
+  }
+  return digits;
+}
+
+/**
  * No-op: as tabelas do Supabase já existem (criadas via migration). Mantido
  * para o startup de src/index.js não precisar mudar.
  */
@@ -127,7 +141,7 @@ export async function saveProspect(prospectData, analysis) {
       company_name: prospectData.empresa,
       niche: prospectData.segmento,
       role: prospectData.cargo,
-      phone: prospectData.telefone,
+      phone: normalizePhone(prospectData.telefone),
       notes: prospectData.info || null,
       website: prospectData.site || null,
       source: 'manual',
@@ -249,6 +263,10 @@ export async function addToHistory(id, resposta, analise) {
   if (responseEventError) throw new Error(responseEventError.message);
 
   if (analise.proximaMensagem) {
+    // sent_at já vem preenchido de propósito: esta mensagem é uma sugestão
+    // pra revisão humana (tela "Continuar Conversa"), não deve nunca ser
+    // pega pelo Motor de Envio (que varre messages com sent_at=null) -
+    // quem manda essa mensagem de verdade é a pessoa, copiando manualmente.
     const { error: outgoingError } = await client
       .from('messages')
       .insert({
@@ -256,7 +274,8 @@ export async function addToHistory(id, resposta, analise) {
         lead_id: id,
         direction: 'OUTBOUND',
         content: analise.proximaMensagem,
-        channel: 'manual'
+        channel: 'manual',
+        sent_at: new Date().toISOString()
       });
     if (outgoingError) throw new Error(outgoingError.message);
   }

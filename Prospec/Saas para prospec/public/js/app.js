@@ -316,6 +316,12 @@ async function handleContinueConversation() {
     return;
   }
 
+  // Trava contra clique duplo: um segundo clique enquanto a primeira chamada
+  // ainda está em andamento gerava e enfileirava a mensagem duas vezes.
+  const btn = document.getElementById('btnAnalyzarContinuar');
+  if (btn && btn.disabled) return;
+  if (btn) btn.disabled = true;
+
   try {
     const result = await continueConversation({
       id: prospectId,
@@ -326,6 +332,8 @@ async function handleContinueConversation() {
   } catch (error) {
     console.error('❌ Erro ao continuar conversa:', error);
     showError('continueAnalysisResult', `Erro: ${error.message}`);
+  } finally {
+    if (btn) btn.disabled = false;
   }
 }
 
