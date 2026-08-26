@@ -47,7 +47,7 @@ test('saveProspect creates a lead, conversation, message, and event; returns the
 
 test('saveProspect normalizes phone to digits-only with country code', async () => {
   const saved = await saveProspect(
-    { empresa: 'Normaliza Telefone', segmento: 'Saúde', contato: 'Teste', cargo: 'Dono', telefone: '51 9898-9889' },
+    { empresa: 'Normaliza Telefone', segmento: 'Saúde', contato: 'Teste', cargo: 'Dono', telefone: '51 9000-0001' },
     { estagio: 'frio', mensagem: 'Oi!' }
   );
   createdLeadIds.push(saved.id);
@@ -55,7 +55,7 @@ test('saveProspect normalizes phone to digits-only with country code', async () 
   const { createClient } = await import('@supabase/supabase-js');
   const client = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
   const { data } = await client.from('leads').select('phone').eq('id', saved.id).single();
-  assert.equal(data.phone, '555198989889');
+  assert.equal(data.phone, '555190000001');
 });
 
 test('getProspect returns metadata merged with history and analyses', async () => {
