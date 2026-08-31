@@ -18,6 +18,12 @@
 - Every user-facing string touched must end up in Portuguese, in the same tone already used elsewhere in the app (direct, no jargon, matches existing copy like "Nenhum prospect ainda. Crie um novo na aba anterior.").
 - Follow the existing code style: `tests/*.test.js` at repo root using `node:test` + `node:assert/strict` (see `tests/utils.test.js` for the exact convention), ES module `import`/`export` throughout, JSDoc-style `/** ... */` comments above exported functions (see `public/js/api.js`).
 
+## Skill-sourced refinements
+
+After this plan's first draft, the 42 design/UX skills installed into `.claude/skills/` (from the 7 repos the user pointed to — see the `chore: install curated design/UX skill set` commit) were read in full and checked against it. Four concrete, low-risk fixes came out of `better-ui`'s `SKILL.md`/`animations.md`/`icons.md` and are folded into Tasks 3, 4 and 6 below (marked inline where they appear): `text-wrap: balance`/`pretty` on headings and body copy, `scale(0.96)` press feedback on `.btn`/`.tab-btn`/`.btn-icon`, a 2px icon stroke inside buttons (500-weight labels read a 1.5px stroke as thin), and suppressing the transition smear on theme toggle.
+
+One finding was **not** applied: `better-colors/token-naming.md` flags `--primary-color` (the brand accent) and `--text-primary` (body text) sharing the word "primary" as "the most common naming collision there is" — accurate of this codebase's tokens. Renaming the whole palette to the primitive/semantic two-tier grammar it recommends is a real, separate refactor (touches every CSS/JS file referencing a color token) and conflicts with this plan's "no palette changes" constraint. Noting it here for a future dedicated pass rather than smuggling a rename into a "polish" plan.
+
 ---
 
 ## Task 1: Design tokens
@@ -296,6 +302,7 @@ Replace with:
   color: var(--primary-color);
   flex: 1;
   min-width: 200px;
+  text-wrap: balance;
 }
 
 .header .subtitle {
@@ -322,11 +329,15 @@ Replace with:
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  transition: background-color var(--duration-base) var(--ease-out);
+  transition: background-color var(--duration-base) var(--ease-out), scale var(--duration-fast) var(--ease-out);
 }
 
 .btn-icon:hover {
   background-color: var(--hover-bg);
+}
+
+.btn-icon:active {
+  scale: 0.96;
 }
 ```
 
@@ -395,11 +406,15 @@ Replace with:
   cursor: pointer;
   font-size: var(--text-base);
   font-weight: 600;
-  transition: background-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
+  transition: background-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out), scale var(--duration-fast) var(--ease-out);
 }
 
 .tab-btn:hover {
   color: var(--text-primary);
+}
+
+.tab-btn:active {
+  scale: 0.96;
 }
 
 .tab-btn.active {
@@ -511,6 +526,7 @@ Replace with:
   font-size: var(--text-lg);
   border-bottom: 2px solid var(--border-color);
   padding-bottom: var(--space-2);
+  text-wrap: balance;
 }
 
 .panel h3 {
@@ -661,12 +677,23 @@ Replace with:
   border-radius: var(--radius-md);
   font-size: var(--text-base);
   cursor: pointer;
-  transition: background-color var(--duration-base) var(--ease-out), transform var(--duration-base) var(--ease-out), box-shadow var(--duration-base) var(--ease-out);
+  transition: background-color var(--duration-base) var(--ease-out), transform var(--duration-base) var(--ease-out), box-shadow var(--duration-base) var(--ease-out), scale var(--duration-fast) var(--ease-out);
   font-weight: 500;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
+}
+
+.btn:active {
+  scale: 0.96;
+}
+
+/* Icon beside a 500-weight button label reads as too thin at the default
+   1.5px stroke - bump to 2px to match the label's optical weight.
+   (better-ui skill: "Match icon stroke to text weight") */
+.btn .icon {
+  stroke-width: 2;
 }
 
 .btn-primary {
@@ -1061,6 +1088,8 @@ Replace with:
   line-height: 1.6;
   color: var(--text-primary);
   margin: var(--space-2) 0;
+  max-width: 65ch;
+  text-wrap: pretty;
 }
 
 .message-box {
@@ -1804,7 +1833,55 @@ function updateThemeButton(theme) {
 }
 ```
 
-- [ ] **Step 3: Replace the 🗑️ emoji in the delete button**
+- [ ] **Step 3: Suppress the transition smear on theme toggle**
+
+Flipping `data-theme` changes color/background/border/shadow on nearly every element at once. Every `transition` this pass just added (buttons, tabs, panels, rows, toast) would fire together on that single attribute change, so the switch would read as a slow smear instead of an instant flip (`better-ui` skill, "Suppress transitions on theme switch").
+
+Find:
+```javascript
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  const newTheme = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', newTheme);
+  saveTheme(newTheme);
+  updateThemeButton(newTheme);
+}
+```
+Replace with:
+```javascript
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  const newTheme = current === 'dark' ? 'light' : 'dark';
+  applyThemeWithoutTransitionSmear(() => {
+    document.documentElement.setAttribute('data-theme', newTheme);
+    saveTheme(newTheme);
+    updateThemeButton(newTheme);
+  });
+}
+
+/**
+ * Every color/background/border/shadow transition in the app would fire at
+ * once when data-theme flips, reading as a slow smear instead of an instant
+ * switch. Suppress all transitions for one frame around the flip so the new
+ * theme's colors commit instantly, then restore transitions on the next paint.
+ */
+function applyThemeWithoutTransitionSmear(applyChange) {
+  const style = document.createElement('style');
+  style.textContent = '*,*::before,*::after{transition:none !important}';
+  document.head.appendChild(style);
+
+  applyChange();
+
+  // Force a synchronous style flush so the new theme resolves while the
+  // override is still applied, before removing it.
+  void document.body.offsetHeight;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => style.remove());
+  });
+}
+```
+
+- [ ] **Step 4: Replace the 🗑️ emoji in the delete button**
 
 Find (inside `renderPainel`):
 ```javascript
@@ -1815,7 +1892,7 @@ Replace with:
         <td><button class="btn-delete-lead" data-id="${p.id}" data-empresa="${p.empresa}" title="Excluir lead">${icon('trash')}</button></td>
 ```
 
-- [ ] **Step 4: Verify**
+- [ ] **Step 5: Verify**
 
 Run:
 ```bash
@@ -1829,6 +1906,12 @@ grep -c "icon(" public/js/app.js
 ```
 Expected: `3` — one `icon(iconName)` call inside the `initializeStaticIcons` loop (drives all 5 static buttons/fields from one call site), one `icon(iconName)` in `updateThemeButton`, one `icon('trash')` in `renderPainel`. (The `import { icon } from './icons.js';` line doesn't count — it has no `icon(`.)
 
+Run:
+```bash
+grep -c "applyThemeWithoutTransitionSmear" public/js/app.js
+```
+Expected: `2` — the function definition plus its one call site inside `toggleTheme`.
+
 Start the app and confirm no import errors:
 ```bash
 npm start &
@@ -1839,11 +1922,11 @@ kill %1
 ```
 Expected: both `HTTP:200`.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add public/js/app.js
-git commit -m "feat: wire icon set into copy/send/search/theme-toggle/delete controls
+git commit -m "feat: wire icon set into copy/send/search/theme-toggle/delete controls, suppress theme-switch transition smear
 
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 ```
