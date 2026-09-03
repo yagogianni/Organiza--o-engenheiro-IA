@@ -100,7 +100,7 @@ export async function getAllProspectsWithPipeline() {
 export async function getProspect(id) {
   const { data: lead, error } = await getClient()
     .from('leads')
-    .select('id, company_name, name, role, niche, website, notes, status, automation_enabled, created_at')
+    .select('id, company_name, name, role, niche, website, notes, status, automation_enabled, created_at, phone, email')
     .eq('id', id)
     .maybeSingle();
   if (error) {
@@ -122,9 +122,63 @@ export async function getProspect(id) {
     status: lead.status,
     automationEnabled: lead.automation_enabled,
     dateCreated: lead.created_at,
+    telefone: lead.phone,
+    email: lead.email,
     historico,
     analises
   };
+}
+
+/**
+ * Registra uma mensagem que JÁ foi enviada de verdade (WhatsApp/Evolution API
+ * ou E-mail/Brevo) - diferente do outgoing gerado por addToHistory, que fica
+ * pendente de envio manual. sent_at é preenchido com o momento real do envio.
+ */
+export async function recordSentMessage(id, texto, channel) {
+  const client = getClient();
+
+  const { data: lead, error: leadError } = await client
+    .from('leads')
+    .select('id')
+    .eq('id', id)
+    .maybeSingle();
+  if (leadError) {
+    if (leadError.code === '22P02') throw new Error('PROSPECT_NOT_FOUND');
+    throw new Error(leadError.message);
+  }
+  if (!lead) throw new Error('PROSPECT_NOT_FOUND');
+
+  const { data: conversation, error: convError } = await client
+    .from('conversations')
+    .select('id')
+    .eq('lead_id', id)
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (convError) throw new Error(convError.message);
+
+  let conversationId = conversation?.id;
+  if (!conversationId) {
+    const { data: newConv, error: newConvError } = await client
+      .from('conversations')
+      .insert({ lead_id: id, channel, status: 'OPEN' })
+      .select('id')
+      .single();
+    if (newConvError) throw new Error(newConvError.message);
+    conversationId = newConv.id;
+  }
+
+  const { error: messageError } = await client
+    .from('messages')
+    .insert({
+      conversation_id: conversationId,
+      lead_id: id,
+      direction: 'OUTBOUND',
+      content: texto,
+      channel,
+      sent_at: new Date().toISOString()
+    });
+  if (messageError) throw new Error(messageError.message);
 }
 
 /**

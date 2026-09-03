@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🎯 PROSPEC.AI - Sistema de Prospecção Inteligente</title>
+  <title>Prospec.IA — Fluxo Digital SC</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/theme.css">
 </head>
@@ -11,11 +14,18 @@
   <div class="container">
     <!-- Header -->
     <header class="header">
-      <h1>🎯 PROSPEC.AI</h1>
-      <p class="subtitle">Sistema de Prospecção Inteligente com Claude IA</p>
+      <div style="display:flex; align-items:center; gap:14px;">
+        <svg width="28" height="28" viewBox="0 0 30 30" fill="none" aria-hidden="true">
+          <path d="M4 20C7 20 7 10 10 10C13 10 13 20 16 20C19 20 19 10 22 10C25 10 25 20 26 20" stroke="var(--primary-color)" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+        </svg>
+        <div>
+          <h1>Fluxo Digital</h1>
+          <p class="subtitle">Prospec.IA — prospecção inteligente</p>
+        </div>
+      </div>
       <div class="header-controls">
-        <button id="themeToggle" class="btn-icon" title="Toggle dark/light mode">
-          🌙 Dark
+        <button id="themeToggle" class="btn-icon" title="Alternar modo claro/escuro">
+          Escuro
         </button>
       </div>
     </header>
@@ -23,13 +33,13 @@
     <!-- Tab Navigation -->
     <nav class="tabs">
       <button class="tab-btn active" data-tab="nova-prospec">
-        📝 Nova Prospecção
+        Nova Prospecção
       </button>
       <button class="tab-btn" data-tab="continuar-conversa">
-        📊 Pipeline
+        Pipeline
       </button>
       <button class="tab-btn" data-tab="painel">
-        📋 Todos os Leads
+        Todos os Leads
       </button>
     </nav>
 
@@ -101,14 +111,14 @@
               </div>
 
               <button type="submit" class="btn btn-primary">
-                🔍 Analisar Prospect
+                Analisar prospect
               </button>
             </form>
           </div>
 
           <!-- Right Panel: Analysis Result -->
           <div class="panel result-panel" id="resultPanel" style="display: none;">
-            <h2>📊 Análise & Recomendações</h2>
+            <h2>Análise & recomendações</h2>
 
             <div id="loadingSpinner" class="loading-spinner" style="display: none;">
               <div class="spinner"></div>
@@ -119,43 +129,43 @@
               <span id="estagioBadge" class="stage-badge"></span>
 
               <div class="analysis-section">
-                <h3>✅ SITUAÇÃO ATUAL</h3>
+                <h3>SITUAÇÃO ATUAL</h3>
                 <p id="situacaoAtual"></p>
               </div>
 
               <div class="analysis-section">
-                <h3>🎯 OBJETIVO</h3>
+                <h3>OBJETIVO</h3>
                 <p id="objetivo"></p>
               </div>
 
               <div class="analysis-section">
-                <h3>🧠 ESTRATÉGIA</h3>
+                <h3>ESTRATÉGIA</h3>
                 <p id="estrategia"></p>
               </div>
 
               <div class="analysis-section warning">
-                <h3>⚠️ O QUE EVITAR</h3>
+                <h3>O QUE EVITAR</h3>
                 <p id="oQueEvitar"></p>
               </div>
 
               <div class="analysis-section message">
-                <h3>💬 MENSAGEM PARA ENVIAR</h3>
+                <h3>MENSAGEM PARA ENVIAR</h3>
                 <div class="message-box" id="mensagem"></div>
                 <div class="button-group">
                   <button class="btn btn-success" id="btnCopiarMensagem">
-                    📋 Copiar Mensagem
+                    Copiar mensagem
                   </button>
                   <button class="btn btn-secondary" id="btnAlternativa">
-                    🔄 Gerar Alternativa
+                    Gerar alternativa
                   </button>
                 </div>
               </div>
 
               <div id="alternativaSection" style="display: none;" class="analysis-section message">
-                <h3>💬 MENSAGEM ALTERNATIVA</h3>
+                <h3>MENSAGEM ALTERNATIVA</h3>
                 <div class="message-box" id="alternativa"></div>
                 <button class="btn btn-success" id="btnCopiarAlternativa">
-                  📋 Copiar Alternativa
+                  Copiar alternativa
                 </button>
               </div>
             </div>
@@ -170,7 +180,7 @@
         <div class="layout-2col">
           <!-- Left Panel: Prospects List -->
           <div class="panel prospects-list-panel">
-            <h2>📋 Seus Prospects</h2>
+            <h2>Seus prospects</h2>
 
             <div class="filter-group">
               <input type="text" id="searchProspect" placeholder="Buscar prospect..."
@@ -195,7 +205,7 @@
 
           <!-- Right Panel: Conversation History -->
           <div class="panel conversation-panel">
-            <h2>💬 Histórico da Conversa</h2>
+            <h2>Histórico da conversa</h2>
 
             <div id="conversationDetail" style="display: none;">
               <div class="prospect-header">
@@ -217,7 +227,7 @@
                 <textarea id="newResponse" rows="4"
                           placeholder="Cole a resposta que recebeu do prospect..."></textarea>
                 <button class="btn btn-primary" id="btnAnalyzarContinuar">
-                  🔍 Analisar e Continuar
+                  Analisar e continuar
                 </button>
               </div>
 
@@ -225,40 +235,46 @@
                 <span id="estagioAtualBadge" class="stage-badge"></span>
 
                 <div class="analysis-section">
-                  <h3>🎯 O QUE SIGNIFICA</h3>
+                  <h3>O QUE SIGNIFICA</h3>
                   <p id="oQueSgnifica"></p>
                 </div>
 
                 <div class="analysis-section">
-                  <h3>📍 ONDE ESTAMOS NA VENDA</h3>
+                  <h3>ONDE ESTAMOS NA VENDA</h3>
                   <p id="ondeEstamos"></p>
                 </div>
 
                 <div class="analysis-section">
-                  <h3>🎯 OBJETIVO AGORA</h3>
+                  <h3>OBJETIVO AGORA</h3>
                   <p id="objetivoAgora"></p>
                 </div>
 
                 <div class="analysis-section">
-                  <h3>🧠 ESTRATÉGIA RECOMENDADA</h3>
+                  <h3>ESTRATÉGIA RECOMENDADA</h3>
                   <p id="estrategiaAgora"></p>
                 </div>
 
                 <div class="analysis-section warning">
-                  <h3>⚠️ O QUE NÃO FAZER</h3>
+                  <h3>O QUE NÃO FAZER</h3>
                   <p id="oQueNaoFazer"></p>
                 </div>
 
                 <div class="analysis-section message">
-                  <h3>💬 PRÓXIMA MENSAGEM</h3>
-                  <div class="message-box" id="proximaMensagem"></div>
-                  <button class="btn btn-success" id="btnCopiarProximaMensagem">
-                    📋 Copiar Mensagem
-                  </button>
+                  <h3>PRÓXIMA MENSAGEM</h3>
+                  <div class="message-box" id="proximaMensagem" contenteditable="true"></div>
+                  <div class="button-group">
+                    <button class="btn btn-success" id="btnCopiarProximaMensagem">
+                      Copiar mensagem
+                    </button>
+                    <button class="btn btn-primary" id="btnEnviarAgora">
+                      Enviar agora
+                    </button>
+                  </div>
+                  <p id="statusEnvio" style="margin-top: 0.5rem; font-size: 0.85rem;"></p>
                 </div>
 
                 <div class="analysis-section">
-                  <h3>⏱️ TIMING</h3>
+                  <h3>TIMING</h3>
                   <p id="timing"></p>
                 </div>
               </div>
@@ -276,7 +292,7 @@
       <!-- TAB 3: Todos os Leads -->
       <section id="painel" class="tab-content">
         <div class="panel painel-panel">
-          <h2>📋 Todos os Leads</h2>
+          <h2>Todos os leads</h2>
           <p class="panel-subtitle">Leads que precisam de você aparecem primeiro, destacados.</p>
           <div id="painelTable" class="painel-table">
             <p class="empty-message">Carregando...</p>
@@ -287,8 +303,8 @@
 
     <!-- Footer -->
     <footer class="footer">
-      <p>🎯 PROSPEC.AI v0.1.0 • Fase 1 (MVP)</p>
-      <p>Desenvolvido com ❤️ • Dados salvos localmente</p>
+      <p>Prospec.IA — Fluxo Digital SC</p>
+      <p>Dados salvos localmente</p>
     </footer>
   </div>
 

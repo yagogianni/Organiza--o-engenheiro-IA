@@ -1,162 +1,116 @@
 /* public/css/theme.css - Theme Variables & Theming */
-/* Status: FASE 1 - Suporte dark/light */
+/* Fluxo Digital SC — bege/verde neutro (aprovado 2026-08-29), dark = variante ink/verde da mesma marca */
 
-/* ===== ROOT COLORS - DEFAULT DARK MODE ===== */
+/* ===== ROOT COLORS - DEFAULT (BEGE/VERDE) ===== */
 :root {
   /* Primary Colors */
-  --primary-color: #3b82f6;
-  --primary-color-hover: #2563eb;
-  --primary-color-light: #eff6ff;
+  --primary-color: #5F7A5E;
+  --primary-color-hover: #4C6350;
+  --primary-color-light: rgba(95, 122, 94, 0.12);
 
   /* Status Colors */
-  --success-color: #22c55e;
-  --success-color-hover: #16a34a;
-  --success-bg: rgba(34, 197, 94, 0.1);
+  --success-color: #588F5E;
+  --success-color-hover: #4C6350;
+  --success-bg: rgba(88, 143, 94, 0.12);
 
-  --warning-color: #f59e0b;
-  --warning-color-hover: #d97706;
-  --warning-bg: rgba(245, 158, 11, 0.1);
+  --warning-color: #B8763B;
+  --warning-color-hover: #9C6431;
+  --warning-bg: rgba(184, 118, 59, 0.12);
 
-  --error-color: #ef4444;
-  --error-color-hover: #dc2626;
-  --error-bg: rgba(239, 68, 68, 0.1);
+  --error-color: #C0453D;
+  --error-color-hover: #A23931;
+  --error-bg: rgba(192, 69, 61, 0.1);
 
-  --secondary-color: #6b7280;
-  --secondary-color-hover: #4b5563;
+  --secondary-color: #6B6752;
+  --secondary-color-hover: #565343;
 
   /* Background Colors */
-  --bg-primary: #0f172a;
-  --secondary-bg: #1e293b;
-  --panel-bg: #1e293b;
-  --header-bg: #0f172a;
-  --input-bg: #334155;
-  --hover-bg: #334155;
+  --bg-primary: #F2ECDD;
+  --secondary-bg: #EAE1CC;
+  --panel-bg: #F8F3E7;
+  --header-bg: #EAE1CC;
+  --input-bg: #EAE1CC;
+  --hover-bg: rgba(43, 42, 34, 0.05);
 
   /* Text Colors */
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
+  --text-primary: #2B2A22;
+  --text-secondary: #6B6752;
 
   /* Border Colors */
-  --border-color: #475569;
+  --border-color: rgba(43, 42, 34, 0.14);
 }
 
-/* ===== LIGHT MODE ===== */
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) {
-    /* Primary Colors */
-    --primary-color: #2563eb;
-    --primary-color-hover: #1d4ed8;
-    --primary-color-light: #eff6ff;
-
-    /* Status Colors */
-    --success-color: #16a34a;
-    --success-color-hover: #15803d;
-    --success-bg: rgba(34, 197, 94, 0.1);
-
-    --warning-color: #d97706;
-    --warning-color-hover: #ca8a04;
-    --warning-bg: rgba(245, 158, 11, 0.1);
-
-    --error-color: #dc2626;
-    --error-color-hover: #b91c1c;
-    --error-bg: rgba(239, 68, 68, 0.1);
-
-    --secondary-color: #6b7280;
-    --secondary-color-hover: #4b5563;
-
-    /* Background Colors */
-    --bg-primary: #ffffff;
-    --secondary-bg: #f9fafb;
-    --panel-bg: #ffffff;
-    --header-bg: #f3f4f6;
-    --input-bg: #ffffff;
-    --hover-bg: #f3f4f6;
-
-    /* Text Colors */
-    --text-primary: #1f2937;
-    --text-secondary: #6b7280;
-
-    /* Border Colors */
-    --border-color: #e5e7eb;
-  }
-}
-
-/* ===== DARK MODE EXPLICIT ===== */
+/* ===== DARK MODE — variante ink/verde ===== */
 [data-theme="dark"] {
   /* Primary Colors */
-  --primary-color: #3b82f6;
-  --primary-color-hover: #2563eb;
-  --primary-color-light: #eff6ff;
+  --primary-color: #7FA57C;
+  --primary-color-hover: #6B9169;
+  --primary-color-light: rgba(127, 165, 124, 0.15);
 
   /* Status Colors */
-  --success-color: #22c55e;
-  --success-color-hover: #16a34a;
-  --success-bg: rgba(34, 197, 94, 0.1);
+  --success-color: #7FA57C;
+  --success-color-hover: #6B9169;
+  --success-bg: rgba(127, 165, 124, 0.15);
 
-  --warning-color: #f59e0b;
-  --warning-color-hover: #d97706;
-  --warning-bg: rgba(245, 158, 11, 0.1);
+  --warning-color: #D99456;
+  --warning-color-hover: #C17F45;
+  --warning-bg: rgba(217, 148, 86, 0.15);
 
-  --error-color: #ef4444;
-  --error-color-hover: #dc2626;
-  --error-bg: rgba(239, 68, 68, 0.1);
+  --error-color: #D9695C;
+  --error-color-hover: #C15347;
+  --error-bg: rgba(217, 105, 92, 0.15);
 
-  --secondary-color: #6b7280;
-  --secondary-color-hover: #4b5563;
+  --secondary-color: #9FC4BD;
+  --secondary-color-hover: #86ADA6;
 
   /* Background Colors */
-  --bg-primary: #0f172a;
-  --secondary-bg: #1e293b;
-  --panel-bg: #1e293b;
-  --header-bg: #0f172a;
-  --input-bg: #334155;
-  --hover-bg: #334155;
+  --bg-primary: #0E2A2E;
+  --secondary-bg: #163B40;
+  --panel-bg: #163B40;
+  --header-bg: #0E2A2E;
+  --input-bg: #1D4A50;
+  --hover-bg: #1D4A50;
 
   /* Text Colors */
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
+  --text-primary: #F2ECDD;
+  --text-secondary: #9FC4BD;
 
   /* Border Colors */
-  --border-color: #475569;
+  --border-color: rgba(242, 236, 221, 0.12);
 }
 
-/* ===== LIGHT MODE EXPLICIT ===== */
+/* ===== LIGHT MODE EXPLICIT (mesmo valor do :root — mantido pra clareza/possível toggle futuro) ===== */
 [data-theme="light"] {
-  /* Primary Colors */
-  --primary-color: #2563eb;
-  --primary-color-hover: #1d4ed8;
-  --primary-color-light: #eff6ff;
+  --primary-color: #5F7A5E;
+  --primary-color-hover: #4C6350;
+  --primary-color-light: rgba(95, 122, 94, 0.12);
 
-  /* Status Colors */
-  --success-color: #16a34a;
-  --success-color-hover: #15803d;
-  --success-bg: rgba(34, 197, 94, 0.1);
+  --success-color: #588F5E;
+  --success-color-hover: #4C6350;
+  --success-bg: rgba(88, 143, 94, 0.12);
 
-  --warning-color: #d97706;
-  --warning-color-hover: #ca8a04;
-  --warning-bg: rgba(245, 158, 11, 0.1);
+  --warning-color: #B8763B;
+  --warning-color-hover: #9C6431;
+  --warning-bg: rgba(184, 118, 59, 0.12);
 
-  --error-color: #dc2626;
-  --error-color-hover: #b91c1c;
-  --error-bg: rgba(239, 68, 68, 0.1);
+  --error-color: #C0453D;
+  --error-color-hover: #A23931;
+  --error-bg: rgba(192, 69, 61, 0.1);
 
-  --secondary-color: #6b7280;
-  --secondary-color-hover: #4b5563;
+  --secondary-color: #6B6752;
+  --secondary-color-hover: #565343;
 
-  /* Background Colors */
-  --bg-primary: #ffffff;
-  --secondary-bg: #f9fafb;
-  --panel-bg: #ffffff;
-  --header-bg: #f3f4f6;
-  --input-bg: #ffffff;
-  --hover-bg: #f3f4f6;
+  --bg-primary: #F2ECDD;
+  --secondary-bg: #EAE1CC;
+  --panel-bg: #F8F3E7;
+  --header-bg: #EAE1CC;
+  --input-bg: #EAE1CC;
+  --hover-bg: rgba(43, 42, 34, 0.05);
 
-  /* Text Colors */
-  --text-primary: #1f2937;
-  --text-secondary: #6b7280;
+  --text-primary: #2B2A22;
+  --text-secondary: #6B6752;
 
-  /* Border Colors */
-  --border-color: #e5e7eb;
+  --border-color: rgba(43, 42, 34, 0.14);
 }
 
 /* ===== SCROLLBAR STYLING ===== */
@@ -181,7 +135,7 @@
 /* ===== SELECTION ===== */
 ::selection {
   background-color: var(--primary-color);
-  color: white;
+  color: var(--bg-primary);
 }
 
 /* ===== FOCUS VISIBLE ===== */

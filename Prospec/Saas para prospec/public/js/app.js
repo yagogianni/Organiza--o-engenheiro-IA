@@ -1,7 +1,7 @@
 // public/js/app.js - Main Application Logic
 // Status: FASE 1 - Implemented
 
-import { analyzeNewProspect, continueConversation, getProspects, getProspect, deleteProspect } from './api.js';
+import { analyzeNewProspect, continueConversation, getProspects, getProspect, deleteProspect, sendMessageNow } from './api.js';
 import { getTheme, saveTheme } from './storage-local.js';
 
 console.log('🎯 PROSPEC.AI - App Loading...');
@@ -60,6 +60,11 @@ function initializeEventListeners() {
   const btnCopiarProximaMensagem = document.getElementById('btnCopiarProximaMensagem');
   if (btnCopiarProximaMensagem) {
     btnCopiarProximaMensagem.addEventListener('click', () => copyToClipboard('proximaMensagem'));
+  }
+
+  const btnEnviarAgora = document.getElementById('btnEnviarAgora');
+  if (btnEnviarAgora) {
+    btnEnviarAgora.addEventListener('click', handleSendNow);
   }
 
   // Alternative message generation
@@ -125,7 +130,7 @@ const STATUS_LABELS = {
   FOLLOW_UP_1: 'Follow-up 1',
   FOLLOW_UP_2: 'Follow-up 2',
   FOLLOW_UP_3: 'Follow-up 3',
-  HUMAN_REVIEW: '🔴 Precisa de você',
+  HUMAN_REVIEW: 'Precisa de você',
   ENGAGED: 'Engajado',
   PAUSED: 'Pausado',
   RESTING: 'Em descanso',
@@ -396,11 +401,51 @@ function copyToClipboard(elementId) {
 
   const text = element.textContent;
   navigator.clipboard.writeText(text).then(() => {
-    showNotification('✅ Copiado para a área de transferência!');
+    showNotification('Copiado para a área de transferência.');
   }).catch(err => {
     console.error('Erro ao copiar:', err);
-    showNotification('❌ Erro ao copiar', 'error');
+    showNotification('Erro ao copiar', 'error');
   });
+}
+
+/**
+ * Send the (possibly edited) suggested message for real, via WhatsApp or
+ * e-mail, straight from the dashboard - no more copy/paste required.
+ */
+async function handleSendNow() {
+  const id = getSelectedProspectId();
+  const statusEl = document.getElementById('statusEnvio');
+  if (!id) {
+    if (statusEl) statusEl.textContent = 'Selecione um prospect primeiro.';
+    return;
+  }
+
+  const messageEl = document.getElementById('proximaMensagem');
+  const texto = (messageEl?.textContent || '').trim();
+  if (!texto) {
+    if (statusEl) statusEl.textContent = 'Não há mensagem pra enviar.';
+    return;
+  }
+
+  const btn = document.getElementById('btnEnviarAgora');
+  if (btn) btn.disabled = true;
+  if (statusEl) statusEl.textContent = 'Enviando...';
+
+  try {
+    const result = await sendMessageNow(id, texto);
+    if (statusEl) {
+      statusEl.textContent = `Enviado por ${result.channel === 'whatsapp' ? 'WhatsApp' : 'e-mail'}.`;
+      statusEl.style.color = 'var(--success-color)';
+    }
+  } catch (error) {
+    console.error('Erro ao enviar:', error);
+    if (statusEl) {
+      statusEl.textContent = `Erro ao enviar: ${error.message}`;
+      statusEl.style.color = 'var(--error-color)';
+    }
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 }
 
 /**
@@ -595,7 +640,7 @@ function toggleTheme() {
 function updateThemeButton(theme) {
   const btn = document.getElementById('themeToggle');
   if (btn) {
-    btn.textContent = theme === 'dark' ? '☀️ Light' : '🌙 Dark';
+    btn.textContent = theme === 'dark' ? 'Claro' : 'Escuro';
   }
 }
 

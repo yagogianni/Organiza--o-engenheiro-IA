@@ -1,5 +1,5 @@
 /* public/css/style.css - Main Styles */
-/* Status: FASE 1 - Esboço básico */
+/* Fluxo Digital SC — Space Grotesk (títulos) + IBM Plex Sans (corpo) + IBM Plex Mono (dados) */
 
 * {
   margin: 0;
@@ -8,11 +8,28 @@
 }
 
 html, body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+  font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.header h1,
+.panel h2,
+.panel h3,
+.tab-btn,
+.btn,
+.prospect-item-company,
+.prospect-header h3 {
+  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.stage-badge,
+.status-badge,
+.conversation-message-date,
+.mono {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
 }
 
 body {
@@ -80,31 +97,39 @@ body {
 /* Tabs */
 .tabs {
   display: flex;
-  border-bottom: 1px solid var(--border-color);
+  gap: 6px;
+  padding: 6px;
+  margin: 0 2rem 1.5rem;
   background-color: var(--secondary-bg);
-  gap: 0;
+  border-radius: 12px;
+  width: fit-content;
 }
 
 .tab-btn {
-  flex: 1;
-  padding: 1rem;
+  padding: 0.6rem 1.1rem;
   background: none;
   border: none;
+  border-radius: 8px;
   color: var(--text-secondary);
   cursor: pointer;
-  font-size: 1rem;
-  border-bottom: 3px solid transparent;
-  transition: all 0.3s;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .tab-btn:hover {
-  background-color: var(--hover-bg);
   color: var(--text-primary);
 }
 
 .tab-btn.active {
-  color: var(--primary-color);
-  border-bottom-color: var(--primary-color);
+  background-color: var(--primary-color);
+  color: var(--bg-primary);
+}
+
+@media (max-width: 768px) {
+  .tabs {
+    margin: 0 1rem 1rem;
+  }
 }
 
 /* Content */
@@ -328,11 +353,11 @@ body {
 }
 
 .painel-row--priority {
-  background-color: var(--error-bg);
+  background-color: var(--warning-bg);
 }
 
 .painel-row--priority:hover {
-  background-color: var(--error-bg);
+  background-color: var(--warning-bg);
   filter: brightness(0.95);
 }
 
@@ -348,8 +373,8 @@ body {
 }
 
 .status-badge--priority {
-  background-color: var(--error-color);
-  color: white;
+  background-color: var(--warning-color);
+  color: var(--panel-bg);
 }
 
 .status-badge--resting,

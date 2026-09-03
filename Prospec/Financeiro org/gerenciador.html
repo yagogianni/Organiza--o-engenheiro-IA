@@ -1,0 +1,1889 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerenciador Financeiro</title>
+<style>
+:root{
+  --bg:#0f1117;
+  --card:#1a1d27;
+  --text:#e2e8f0;
+  --text-secondary:#94a3b8;
+  --border:#2d3748;
+  --green:#22c55e;
+  --red:#ef4444;
+  --blue:#3b82f6;
+  --orange:#f97316;
+  --purple:#a855f7;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+button,input,select,textarea{font-family:inherit;}
+h1,h2,h3{margin:0 0 12px 0;}
+p{margin:0 0 12px 0;}
+a{color:var(--blue);}
+
+#app{min-height:100vh;display:flex;flex-direction:column;}
+
+.header{
+  position:sticky;top:0;z-index:40;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px;background:var(--card);border-bottom:1px solid var(--border);
+}
+.header-title{font-size:18px;font-weight:700;}
+
+.layout{display:flex;flex:1;}
+
+.sidebar{display:none;}
+.bottomnav{
+  position:fixed;bottom:0;left:0;right:0;z-index:50;
+  display:flex;background:var(--card);border-top:1px solid var(--border);
+}
+.bottomnav-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:8px 4px;background:none;border:none;color:var(--text-secondary);cursor:pointer;
+  transition:0.2s ease;font-size:11px;
+}
+.bottomnav-item span{font-size:18px;}
+.bottomnav-item.active{color:var(--blue);}
+
+.content{flex:1;padding:16px;padding-bottom:88px;max-width:1100px;width:100%;margin:0 auto;}
+
+@media(min-width:768px){
+  .sidebar{
+    display:flex;flex-direction:column;
+    position:fixed;top:0;left:0;bottom:0;width:220px;
+    background:var(--card);border-right:1px solid var(--border);padding:20px 12px;
+  }
+  .sidebar-logo{font-weight:800;font-size:16px;line-height:1.3;padding:0 10px 20px 10px;color:var(--text);}
+  .sidebar-nav{display:flex;flex-direction:column;gap:4px;}
+  .nav-item{
+    display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;
+    background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:14px;
+    text-align:left;transition:0.2s ease;
+  }
+  .nav-item:hover{background:rgba(255,255,255,0.04);}
+  .nav-item.active{background:rgba(59,130,246,0.15);color:var(--blue);}
+  .bottomnav{display:none;}
+  .content{margin:0 0 0 220px;padding:28px;padding-bottom:28px;max-width:1600px;}
+}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px;margin-bottom:20px;}
+.card{
+  background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:18px;box-shadow:0 2px 8px rgba(0,0,0,0.25);margin-bottom:16px;
+}
+.card-alert{border-left:3px solid var(--orange);}
+.card-label{font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.03em;margin-bottom:8px;}
+.card-value{font-size:24px;font-weight:700;}
+.card-header-row{display:flex;justify-content:space-between;align-items:center;}
+
+.finance-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-bottom:16px;}
+.finance-grid .card{margin-bottom:0;}
+.line{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:14px;}
+.line:last-child{border-bottom:none;}
+
+.section-header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+
+.btn{
+  padding:10px 16px;border-radius:8px;border:none;cursor:pointer;font-weight:600;
+  transition:0.2s ease;font-size:14px;
+}
+.btn-sm{padding:6px 10px;font-size:12px;}
+.btn-block{width:100%;}
+.btn-primary{background:var(--blue);color:#fff;}
+.btn-primary:hover{opacity:0.88;}
+.btn-danger{background:var(--red);color:#fff;}
+.btn-danger:hover{opacity:0.88;}
+.btn-secondary{background:var(--border);color:var(--text);}
+.btn-secondary:hover{opacity:0.85;}
+.btn-success{background:var(--green);color:#fff;}
+.btn-success:hover{opacity:0.88;}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;}
+.link-config{background:none;border:none;color:var(--blue);text-decoration:underline;cursor:pointer;font-size:12px;padding:0;}
+.link-nome{background:none;border:none;color:var(--blue);cursor:pointer;padding:0;font-size:13px;font-family:inherit;text-align:left;}
+.link-nome:hover{text-decoration:underline;}
+.badge-btn{background:none;border:none;padding:0;cursor:pointer;}
+.status-pick-btn{
+  display:block;width:100%;text-align:left;padding:12px 14px;margin-bottom:8px;
+  border-radius:8px;border:1px solid var(--border);background:var(--bg);cursor:pointer;transition:0.2s ease;
+}
+.status-pick-btn:hover{border-color:var(--blue);}
+.status-pick-btn.active{border-color:var(--blue);background:rgba(59,130,246,0.1);}
+
+.table-wrap{overflow-x:auto;}
+.table{width:100%;border-collapse:collapse;min-width:560px;}
+.table th,.table td{padding:10px;text-align:left;border-bottom:1px solid var(--border);font-size:13px;white-space:nowrap;}
+.table th{color:var(--text-secondary);font-weight:600;text-transform:uppercase;font-size:11px;}
+.table td.empty{color:var(--text-secondary);text-align:center;white-space:normal;}
+.table td.actions{display:flex;gap:6px;flex-wrap:wrap;}
+
+.badge{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap;}
+.badge-green{background:rgba(34,197,94,0.15);color:var(--green);}
+.badge-red{background:rgba(239,68,68,0.15);color:var(--red);}
+.badge-orange{background:rgba(249,115,22,0.15);color:var(--orange);}
+.badge-purple{background:rgba(168,85,247,0.15);color:var(--purple);}
+.badge-blue{background:rgba(59,130,246,0.15);color:var(--blue);}
+
+.filters-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
+.filters-bar input,.filters-bar select{flex:1;min-width:150px;}
+
+.form-group{margin-bottom:14px;display:flex;flex-direction:column;gap:6px;flex:1;}
+.form-group.checkbox{flex-direction:row;align-items:center;}
+.form-group.checkbox label{display:flex;align-items:center;gap:8px;color:var(--text);font-size:14px;}
+.form-row{display:flex;gap:12px;flex-wrap:wrap;}
+label{font-size:13px;color:var(--text-secondary);}
+input,select,textarea{
+  background:var(--bg);border:1px solid var(--border);border-radius:8px;
+  padding:10px;color:var(--text);font-size:14px;width:100%;
+}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue);}
+textarea{resize:vertical;}
+
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;
+  align-items:center;justify-content:center;z-index:100;padding:16px;
+}
+.modal{
+  background:var(--card);border-radius:12px;padding:24px;max-width:520px;width:100%;
+  max-height:90vh;overflow-y:auto;border:1px solid var(--border);
+}
+.modal-lg{max-width:640px;}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;flex-wrap:wrap;}
+
+.msg-card{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px;}
+.msg-card-header{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;font-size:13px;}
+
+.status-group{margin-bottom:24px;}
+.status-group-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.prospect-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px;}
+.prospect-card-header{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:4px;}
+.script-preview{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:13px;line-height:1.6;white-space:pre-wrap;margin-bottom:14px;}
+.script-placeholder{background:rgba(249,115,22,0.18);color:var(--orange);padding:1px 4px;border-radius:4px;font-weight:600;}
+
+#toast-container{position:fixed;top:16px;right:16px;z-index:200;display:flex;flex-direction:column;gap:8px;max-width:90vw;}
+.toast{
+  padding:12px 16px;border-radius:8px;color:#fff;font-size:14px;
+  box-shadow:0 4px 12px rgba(0,0,0,0.4);transition:opacity 0.3s ease;
+}
+.toast-success{background:var(--green);}
+.toast-error{background:var(--red);}
+
+.auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+.auth-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:32px;max-width:380px;width:100%;}
+.auth-card h1{font-size:20px;text-align:center;}
+.auth-subtitle{color:var(--text-secondary);font-size:13px;text-align:center;margin-bottom:20px;}
+
+.text-secondary{color:var(--text-secondary);font-size:13px;}
+
+.chart-container{width:100%;}
+.chart-container canvas{width:100%;display:block;}
+</style>
+</head>
+<body>
+<div id="toast-container"></div>
+<div id="app"></div>
+
+<script>
+(function(){
+'use strict';
+
+const APP_VERSION = '1.0.0';
+
+let db = null;
+let cryptoKey = null;
+let currentSection = 'home';
+let mesFinanceiro = currentMonth();
+let filtrosProspects = { tipo:'', statusFunil:'', busca:'' };
+let mostrarTrocarSenha = false;
+let confirmResolver = null;
+
+/* ---------- utils ---------- */
+
+function esc(str){
+  if(str === null || str === undefined) return '';
+  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function uuid(){
+  if(crypto.randomUUID) return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random()*16|0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
+function formatCurrency(v){
+  return (Number(v)||0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+}
+
+function formatDateBR(dateStr){
+  if(!dateStr) return '-';
+  const [y,m,d] = dateStr.split('-');
+  if(!y || !m || !d) return '-';
+  return `${d}/${m}/${y}`;
+}
+
+function currentMonth(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+
+function toast(message, type){
+  type = type || 'success';
+  const container = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  el.textContent = message;
+  container.appendChild(el);
+  setTimeout(() => {
+    el.style.opacity = '0';
+    setTimeout(() => el.remove(), 300);
+  }, 3000);
+}
+
+function renderOptions(list, selected){
+  return list.map(o => `<option value="${esc(o)}" ${o===selected?'selected':''}>${esc(o)}</option>`).join('');
+}
+
+/* ---------- criptografia ---------- */
+
+function bufToBase64(buf){
+  const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+  let binary = '';
+  for(let i=0;i<bytes.length;i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+
+function base64ToBuf(b64){
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for(let i=0;i<binary.length;i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+async function sha256B64(str){
+  const enc = new TextEncoder();
+  const hash = await crypto.subtle.digest('SHA-256', enc.encode(str));
+  return bufToBase64(hash);
+}
+
+async function deriveKey(password, saltB64){
+  const enc = new TextEncoder();
+  const salt = base64ToBuf(saltB64);
+  const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(password), {name:'PBKDF2'}, false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    {name:'PBKDF2', salt, iterations:100000, hash:'SHA-256'},
+    keyMaterial,
+    {name:'AES-GCM', length:256},
+    false,
+    ['encrypt','decrypt']
+  );
+}
+
+async function encryptJSON(key, obj){
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const enc = new TextEncoder();
+  const data = enc.encode(JSON.stringify(obj));
+  const cipher = await crypto.subtle.encrypt({name:'AES-GCM', iv}, key, data);
+  return bufToBase64(iv) + '.' + bufToBase64(cipher);
+}
+
+async function decryptJSON(key, combined){
+  const [ivB64, cipherB64] = combined.split('.');
+  const iv = base64ToBuf(ivB64);
+  const cipher = base64ToBuf(cipherB64);
+  const plain = await crypto.subtle.decrypt({name:'AES-GCM', iv}, key, cipher);
+  return JSON.parse(new TextDecoder().decode(plain));
+}
+
+async function persist(){
+  const combined = await encryptJSON(cryptoKey, db);
+  localStorage.setItem('gf_data', combined);
+}
+
+/* ---------- cálculos financeiros ---------- */
+
+function calcularCustoAPI(conversasMes, cambio){
+  const conversas = Number(conversasMes) || 0;
+  const custoEntradaUsd = (conversas*16000/1000000)*1.50;
+  const custoSaidaUsd = (conversas*1600/1000000)*9.00;
+  return (custoEntradaUsd+custoSaidaUsd)*cambio;
+}
+
+function clientesAtivos(){
+  return db.clientes.filter(c => c.status === 'Ativo');
+}
+
+function mrr(){
+  return clientesAtivos().reduce((s,c) => s+Number(c.mensalidade), 0);
+}
+
+function custoAPITotalMes(){
+  return clientesAtivos().reduce((s,c) => s+calcularCustoAPI(c.conversasMes, db.config.cambioDolar), 0);
+}
+
+function outrosCustosDoMes(mesRef){
+  return db.outrosCustos.filter(o => o.mes === mesRef);
+}
+
+function custosDoMes(mesRef){
+  const vps = db.config.vpsValor;
+  const api = custoAPITotalMes();
+  const mei = db.config.meiAtivo ? db.config.meiValor : 0;
+  const outros = outrosCustosDoMes(mesRef).reduce((s,o) => s+Number(o.valor), 0);
+  return vps+api+mei+outros;
+}
+
+function setupsRecebidosNoMes(mesRef){
+  return db.clientes.filter(c => c.setupStatus==='Pago' && c.dataInicio && c.dataInicio.slice(0,7)===mesRef)
+    .reduce((s,c) => s+Number(c.setupValor), 0);
+}
+
+function mensalidadesDoMes(mesRef){
+  return db.clientes.filter(c => c.status==='Ativo' && c.dataInicio && c.dataInicio.slice(0,7)<=mesRef)
+    .reduce((s,c) => s+Number(c.mensalidade), 0);
+}
+
+function receitaDoMes(mesRef){
+  return mensalidadesDoMes(mesRef) + setupsRecebidosNoMes(mesRef);
+}
+
+function recebimentosDoMes(mesRef){
+  const rows = [];
+  db.clientes.forEach(c => {
+    if(c.setupStatus==='Pago' && c.dataInicio && c.dataInicio.slice(0,7)===mesRef){
+      rows.push({data:c.dataInicio, cliente:c.nomeClinica, tipo:'Setup', valor:Number(c.setupValor)});
+    }
+    if(c.status==='Ativo' && c.dataInicio && c.dataInicio.slice(0,7)<=mesRef){
+      const dia = new Date(c.dataInicio+'T00:00:00').getDate();
+      const [y,m] = mesRef.split('-').map(Number);
+      const ultimoDia = new Date(y, m, 0).getDate();
+      const diaAjustado = Math.min(dia, ultimoDia);
+      const dataPagamento = `${mesRef}-${String(diaAjustado).padStart(2,'0')}`;
+      rows.push({data:dataPagamento, cliente:c.nomeClinica, tipo:'Mensalidade', valor:Number(c.mensalidade)});
+    }
+  });
+  rows.sort((a,b) => a.data.localeCompare(b.data));
+  return rows;
+}
+
+function ultimosMeses(mesRef, qtd){
+  const [y,m] = mesRef.split('-').map(Number);
+  const arr = [];
+  for(let i=qtd-1;i>=0;i--){
+    const d = new Date(y, m-1-i, 1);
+    arr.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+  }
+  return arr;
+}
+
+function formatMesLabel(mesRef){
+  const [y,m] = mesRef.split('-');
+  const nomes = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  return nomes[Number(m)-1]+'/'+y.slice(2);
+}
+
+/* ---------- render principal ---------- */
+
+function render(){
+  const active = document.activeElement;
+  const activeId = active && active.id;
+  const selStart = active && 'selectionStart' in active ? active.selectionStart : null;
+  const selEnd = active && 'selectionEnd' in active ? active.selectionEnd : null;
+
+  const app = document.getElementById('app');
+  if(!cryptoKey){
+    app.innerHTML = localStorage.getItem('gf_pwhash') ? renderLogin() : renderSetup();
+  } else {
+    app.innerHTML = renderShell();
+  }
+
+  if(activeId){
+    const el = document.getElementById(activeId);
+    if(el){
+      el.focus();
+      if(selStart !== null && el.setSelectionRange){
+        try{ el.setSelectionRange(selStart, selEnd); }catch(e){}
+      }
+    }
+  }
+
+  if(cryptoKey && currentSection === 'financeiro') desenharGraficoFinanceiro();
+}
+
+const NAV_ITEMS = [
+  {key:'home', label:'Home', icon:'⌂'},
+  {key:'clientes', label:'Clientes', icon:'👥'},
+  {key:'prospects', label:'Prospects', icon:'🎯'},
+  {key:'financeiro', label:'Financeiro', icon:'💰'},
+  {key:'config', label:'Config', icon:'⚙️'}
+];
+
+function sectionTitle(key){
+  return {home:'Home', clientes:'Clientes', prospects:'Prospects', financeiro:'Financeiro', config:'Configurações'}[key] || '';
+}
+
+function renderShell(){
+  const navDesktop = NAV_ITEMS.map(n => `<button class="nav-item ${currentSection===n.key?'active':''}" data-action="nav" data-section="${n.key}"><span>${n.icon}</span> ${n.label}</button>`).join('');
+  const navMobile = NAV_ITEMS.map(n => `<button class="bottomnav-item ${currentSection===n.key?'active':''}" data-action="nav" data-section="${n.key}"><span>${n.icon}</span><small>${n.label}</small></button>`).join('');
+
+  let sectionHtml = '';
+  if(currentSection === 'home') sectionHtml = renderHome();
+  else if(currentSection === 'clientes') sectionHtml = renderClientes();
+  else if(currentSection === 'prospects') sectionHtml = renderProspects();
+  else if(currentSection === 'financeiro') sectionHtml = renderFinanceiro();
+  else if(currentSection === 'config') sectionHtml = renderConfiguracoes();
+
+  return `
+  <div class="header">
+    <div class="header-title">${sectionTitle(currentSection)}</div>
+    <button class="btn btn-secondary btn-sm" data-action="bloquear">🔒 Bloquear</button>
+  </div>
+  <div class="layout">
+    <nav class="sidebar">
+      <div class="sidebar-logo">Gerenciador<br>Financeiro</div>
+      <div class="sidebar-nav">${navDesktop}</div>
+    </nav>
+    <main class="content">${sectionHtml}</main>
+  </div>
+  <nav class="bottomnav">${navMobile}</nav>
+  <div id="modal-root"></div>
+  `;
+}
+
+/* ---------- Home ---------- */
+
+function renderHome(){
+  const mes = currentMonth();
+  const ativos = clientesAtivos().length;
+  const mrrVal = mrr();
+  const custos = custosDoMes(mes);
+  const sobra = receitaDoMes(mes) - custos;
+  const prospAtivos = db.prospects.filter(p => !STATUS_TERMINAL.includes(p.status)).length;
+
+  return `<div class="cards">
+    <div class="card"><div class="card-label">Clientes ativos</div><div class="card-value">${ativos}</div></div>
+    <div class="card"><div class="card-label">MRR</div><div class="card-value" style="color:var(--green)">${formatCurrency(mrrVal)}</div></div>
+    <div class="card"><div class="card-label">Custos do mês</div><div class="card-value" style="color:var(--red)">${formatCurrency(custos)}</div></div>
+    <div class="card"><div class="card-label">Sobra líquida</div><div class="card-value" style="color:${sobra>=0?'var(--green)':'var(--red)'}">${formatCurrency(sobra)}</div></div>
+    <div class="card"><div class="card-label">Prospects ativos</div><div class="card-value" style="color:var(--purple)">${prospAtivos}</div></div>
+  </div>`;
+}
+
+/* ---------- Clientes ---------- */
+
+const ESPECIALIDADES = ['Odontologia','Dermatologia','Fisioterapia','Clínica Médica','Estética','Outro'];
+
+function renderClientes(){
+  const rows = db.clientes.map(c => {
+    const custoApi = calcularCustoAPI(c.conversasMes, db.config.cambioDolar);
+    const lucro = Number(c.mensalidade) - custoApi;
+    const badgeClass = c.status==='Ativo' ? 'badge-green' : c.status==='Em implantação' ? 'badge-orange' : 'badge-red';
+    return `<tr>
+      <td>${esc(c.nomeClinica)}</td>
+      <td>${esc(c.especialidade)}</td>
+      <td>${esc(c.whatsapp)}</td>
+      <td>${formatCurrency(c.mensalidade)}</td>
+      <td>${formatCurrency(custoApi)}</td>
+      <td style="color:${lucro>=0?'var(--green)':'var(--red)'}">${formatCurrency(lucro)}</td>
+      <td><span class="badge ${badgeClass}">${esc(c.status)}</span></td>
+      <td class="actions">
+        <button class="btn btn-sm btn-secondary" data-action="editar-cliente" data-id="${c.id}">Editar</button>
+        <button class="btn btn-sm btn-secondary" data-action="gerar-prompt" data-id="${c.id}">Gerar prompt</button>
+        ${c.status!=='Cancelado' ? `<button class="btn btn-sm btn-danger" data-action="cancelar-cliente" data-id="${c.id}">Cancelar</button>` : ''}
+        <button class="btn btn-sm btn-danger" data-action="apagar-cliente" data-id="${c.id}">Apagar</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  return `<div class="section-header"><button class="btn btn-primary" data-action="novo-cliente">+ Novo cliente</button></div>
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Clínica</th><th>Especialidade</th><th>WhatsApp</th><th>Mensalidade</th><th>Custo API</th><th>Lucro líquido</th><th>Status</th><th>Ações</th></tr></thead>
+    <tbody>${rows || '<tr><td colspan="8" class="empty">Nenhum cliente cadastrado ainda.</td></tr>'}</tbody>
+  </table></div>`;
+}
+
+function openClienteForm(clienteId, prospectId){
+  const cliente = clienteId ? db.clientes.find(c => c.id===clienteId) : null;
+  const prospect = prospectId ? db.prospects.find(p => p.id===prospectId) : null;
+
+  const nomeClinica = (cliente && cliente.nomeClinica) || (prospect && prospect.nome) || '';
+  const responsavel = (cliente && cliente.responsavel) || '';
+  const especialidade = (cliente && cliente.especialidade) || 'Outro';
+  const whatsapp = (cliente && cliente.whatsapp) || (prospect && prospect.whatsapp) || '';
+  const observacoes = (cliente && cliente.observacoes) || (prospect && prospect.observacoes) || '';
+  const setupValor = cliente ? cliente.setupValor : db.config.setupPadrao;
+  const mensalidade = cliente ? cliente.mensalidade : db.config.mensalidadePadrao;
+  const setupStatus = (cliente && cliente.setupStatus) || 'Pendente';
+  const status = (cliente && cliente.status) || 'Em implantação';
+  const dataInicio = (cliente && cliente.dataInicio) || new Date().toISOString().slice(0,10);
+  const conversasMes = cliente ? cliente.conversasMes : '';
+
+  const titulo = cliente ? 'Editar cliente' : (prospect ? 'Converter prospect em cliente' : 'Novo cliente');
+
+  openModal(`<div class="modal"><h2>${titulo}</h2>
+    ${prospect ? `<div class="btn-row" style="margin-bottom:14px"><button type="button" class="btn btn-secondary" data-action="gerar-contrato-pdf">📄 Gerar contrato PDF</button></div>` : ''}
+    <form id="form-cliente" data-id="${cliente?cliente.id:''}" data-prospect-id="${prospect?prospect.id:''}">
+      <div class="form-group"><label>Nome da clínica *</label><input type="text" name="nomeClinica" value="${esc(nomeClinica)}" required></div>
+      <div class="form-group"><label>Responsável</label><input type="text" name="responsavel" value="${esc(responsavel)}"></div>
+      <div class="form-group"><label>Especialidade</label><select name="especialidade">${renderOptions(ESPECIALIDADES, especialidade)}</select></div>
+      <div class="form-group"><label>WhatsApp *</label><input type="text" id="whatsapp" name="whatsapp" value="${esc(whatsapp)}" placeholder="(00) 00000-0000" required></div>
+      <div class="form-row">
+        <div class="form-group"><label>Setup (R$)</label><input type="number" step="0.01" min="0" name="setupValor" value="${setupValor}"></div>
+        <div class="form-group"><label>Status do setup</label><select name="setupStatus">${renderOptions(['Pago','Pendente'], setupStatus)}</select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Mensalidade (R$)</label><input type="number" step="0.01" min="0" name="mensalidade" value="${mensalidade}"></div>
+        <div class="form-group"><label>Data de início</label><input type="text" class="input-data-br" name="dataInicio" value="${formatDateBR(dataInicio)}" placeholder="DD/MM/AAAA" maxlength="10" inputmode="numeric"></div>
+      </div>
+      <div class="form-group"><label>Conversas estimadas/mês *</label><input type="number" min="1" step="1" name="conversasMes" value="${conversasMes}" required></div>
+      <div class="form-group"><label>Status</label><select name="status">${renderOptions(['Ativo','Em implantação','Cancelado'], status)}</select></div>
+      <div class="form-group"><label>Observações</label><textarea name="observacoes" rows="3">${esc(observacoes)}</textarea></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" data-action="close-modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar</button>
+      </div>
+    </form>
+  </div>`);
+}
+
+async function submitClienteForm(form){
+  const nomeClinica = form.elements.nomeClinica.value.trim();
+  if(!nomeClinica){ toast('Nome da clínica é obrigatório','error'); return; }
+  const whatsapp = form.elements.whatsapp.value.trim();
+  if(!whatsapp || !/^\(\d{2}\) \d{4,5}-\d{4}$/.test(whatsapp)){ toast('WhatsApp inválido. Use o formato (XX) XXXXX-XXXX (celular) ou (XX) XXXX-XXXX (fixo)','error'); return; }
+  const conversasMes = Number(form.elements.conversasMes.value);
+  if(!conversasMes || conversasMes<=0){ toast('Informe as conversas estimadas por mês','error'); return; }
+  const dataInicioISO = dateBRParaISO(form.elements.dataInicio.value);
+  if(dataInicioISO === null){ toast('Data de início inválida. Use o formato DD/MM/AAAA','error'); return; }
+
+  const isEdit = !!form.dataset.id;
+  const id = form.dataset.id || uuid();
+  const existing = isEdit ? db.clientes.find(c => c.id===id) : null;
+
+  const cliente = {
+    id,
+    nomeClinica,
+    responsavel: form.elements.responsavel.value.trim(),
+    especialidade: form.elements.especialidade.value,
+    whatsapp,
+    setupValor: Number(form.elements.setupValor.value) || 0,
+    setupStatus: form.elements.setupStatus.value,
+    mensalidade: Number(form.elements.mensalidade.value) || 0,
+    dataInicio: dataInicioISO,
+    conversasMes,
+    status: form.elements.status.value,
+    observacoes: form.elements.observacoes.value.trim(),
+    criadoEm: existing ? existing.criadoEm : new Date().toISOString(),
+    canceladoEm: existing ? existing.canceladoEm : null
+  };
+
+  if(isEdit){
+    const idx = db.clientes.findIndex(c => c.id===id);
+    db.clientes[idx] = cliente;
+  } else {
+    db.clientes.push(cliente);
+  }
+
+  const prospectId = form.dataset.prospectId;
+  if(prospectId){
+    const p = db.prospects.find(p => p.id===prospectId);
+    if(p){ p.status = 'Fechado'; p.fechadoEm = new Date().toISOString(); p.convertidoClienteId = id; }
+  }
+
+  await persist();
+  closeModal();
+  currentSection = 'clientes';
+  render();
+  toast(isEdit ? 'Cliente atualizado' : 'Cliente cadastrado', 'success');
+}
+
+async function confirmCancelarCliente(id){
+  const ok = await showConfirm('Tem certeza que deseja cancelar este cliente? Ele sairá do cálculo de MRR mas continuará no histórico.');
+  if(!ok) return;
+  const c = db.clientes.find(c => c.id===id);
+  if(!c) return;
+  c.status = 'Cancelado';
+  c.canceladoEm = new Date().toISOString();
+  await persist();
+  render();
+  toast('Cliente cancelado', 'success');
+}
+
+async function confirmApagarCliente(id){
+  const ok = await showConfirm('Tem certeza que deseja apagar este cliente permanentemente? Essa ação não pode ser desfeita e removerá todo o histórico dele.');
+  if(!ok) return;
+  db.clientes = db.clientes.filter(c => c.id!==id);
+  await persist();
+  render();
+  toast('Cliente apagado', 'success');
+}
+
+/* ---------- Gerador de prompt do bot (onboarding do cliente) ---------- */
+
+function openPromptForm(clienteId){
+  const cliente = db.clientes.find(c => c.id===clienteId);
+  if(!cliente) return;
+  const pc = cliente.promptConfig || {};
+  openModal(`<div class="modal modal-lg">
+    <h2>Gerar prompt — ${esc(cliente.nomeClinica)}</h2>
+    <p class="text-secondary">Preencha as informações da clínica para montar o system prompt do bot, pronto para colar no n8n.</p>
+    <form id="form-prompt-cliente" data-id="${cliente.id}">
+      <div class="form-group"><label>Nome dos profissionais</label><textarea name="nomeProfissionais" rows="2" placeholder="Dr. João Silva, Dra. Maria Souza">${esc(pc.nomeProfissionais)}</textarea></div>
+      <div class="form-group"><label>Horário de funcionamento</label><textarea name="horarioFuncionamento" rows="2" placeholder="Segunda a sexta, 8h às 18h">${esc(pc.horarioFuncionamento)}</textarea></div>
+      <div class="form-group"><label>Procedimentos e valores</label><textarea name="procedimentosValores" rows="4" placeholder="Consulta: R$ 150&#10;Limpeza: R$ 120">${esc(pc.procedimentosValores)}</textarea></div>
+      <div class="form-group"><label>Convênios aceitos</label><textarea name="conveniosAceitos" rows="2" placeholder="Unimed, Bradesco Saúde, particular">${esc(pc.conveniosAceitos)}</textarea></div>
+      <div class="form-group"><label>Informações extras / diferenciais</label><textarea name="informacoesExtras" rows="3" placeholder="Estacionamento próprio, atendimento infantil...">${esc(pc.informacoesExtras)}</textarea></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" data-action="close-modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Gerar prompt</button>
+      </div>
+    </form>
+  </div>`);
+}
+
+async function submitPromptForm(form){
+  const id = form.dataset.id;
+  const cliente = db.clientes.find(c => c.id===id);
+  if(!cliente) return;
+  cliente.promptConfig = {
+    nomeProfissionais: form.elements.nomeProfissionais.value.trim(),
+    horarioFuncionamento: form.elements.horarioFuncionamento.value.trim(),
+    procedimentosValores: form.elements.procedimentosValores.value.trim(),
+    conveniosAceitos: form.elements.conveniosAceitos.value.trim(),
+    informacoesExtras: form.elements.informacoesExtras.value.trim()
+  };
+  await persist();
+  openPromptResultModal(id);
+}
+
+function montarPromptCliente(cliente){
+  const pc = cliente.promptConfig || {};
+  const campo = v => (v && v.trim()) ? v.trim() : '[preencher]';
+  return `Você é a assistente virtual de atendimento da ${cliente.nomeClinica}, especializada em ${cliente.especialidade}.
+
+## SEU PAPEL
+Você faz o primeiro atendimento aos pacientes pelo WhatsApp: tira dúvidas, informa procedimentos e valores, verifica convênios aceitos e organiza o pré-agendamento. Você não substitui a equipe da clínica, trabalha ao lado dela, cuidando das mensagens repetitivas e do atendimento fora do horário comercial, para que a secretária foque no que precisa de atenção humana.
+
+## INFORMAÇÕES DA CLÍNICA
+
+Nome: ${cliente.nomeClinica}
+Especialidade: ${cliente.especialidade}
+Profissionais: ${campo(pc.nomeProfissionais)}
+Horário de funcionamento: ${campo(pc.horarioFuncionamento)}
+
+Procedimentos e valores:
+${campo(pc.procedimentosValores)}
+
+Convênios aceitos:
+${campo(pc.conveniosAceitos)}
+
+Informações extras / diferenciais:
+${campo(pc.informacoesExtras)}
+
+## COMO ATENDER
+- Seja educada, objetiva e acolhedora.
+- Responda dúvidas sobre procedimentos, valores e convênios com base apenas nas informações acima.
+- Se o paciente perguntar algo que não está nas informações da clínica, seja honesta: diga que vai confirmar com a equipe e não invente informações.
+- Colete nome, procedimento de interesse e melhor horário de contato para organizar o pré-agendamento.
+- Nunca prometa horário de consulta sem confirmação da equipe, apenas registre o interesse do paciente.
+- Se o paciente descrever uma situação que pareça urgência ou emergência de saúde, oriente-o a procurar atendimento imediato e avise que a equipe será notificada.
+- Mantenha as respostas curtas, no tom natural de uma conversa de WhatsApp.
+
+Responda sempre em português.`;
+}
+
+function openPromptResultModal(clienteId){
+  const cliente = db.clientes.find(c => c.id===clienteId);
+  if(!cliente) return;
+  const texto = montarPromptCliente(cliente);
+  openModal(`<div class="modal modal-lg">
+    <h2>Prompt — ${esc(cliente.nomeClinica)}</h2>
+    <div class="form-group"><textarea id="template-texto" rows="18" style="font-family:monospace;font-size:12px">${esc(texto)}</textarea></div>
+    <div class="modal-actions" style="justify-content:space-between">
+      <button type="button" class="btn btn-secondary" data-action="gerar-prompt" data-id="${cliente.id}">Editar respostas</button>
+      <div class="btn-row">
+        <button type="button" class="btn btn-secondary" data-action="copiar-template">Copiar</button>
+        <button type="button" class="btn btn-primary" data-action="close-modal">Fechar</button>
+      </div>
+    </div>
+  </div>`);
+}
+
+/* ---------- Prospects ---------- */
+
+const TIPOS_PROSPECT = ['Clínica','Barbearia','Outro'];
+const STATUS_PIPELINE = ['Novo','Contatado','Aguardando','Demo marcada','Proposta enviada'];
+const STATUS_TERMINAL = ['Fechado','Perdido'];
+const ALL_STATUS = [...STATUS_PIPELINE, ...STATUS_TERMINAL];
+const BADGE_STATUS = {
+  'Novo':'badge-blue','Contatado':'badge-blue','Aguardando':'badge-orange',
+  'Demo marcada':'badge-purple','Proposta enviada':'badge-purple',
+  'Fechado':'badge-green','Perdido':'badge-red'
+};
+
+const SCRIPTS_PROSPECCAO = [
+  {
+    id: 'script1', numero: 1, nome: 'Abordagem', categoria: 'Funil',
+    texto: `Oi, Dr. [Nome]! Tudo bem?
+Sou estudante de medicina aqui em Itajaí e desenvolvi um assistente de WhatsApp pra clínicas.
+Pergunta rápida: quando paciente manda mensagem fora do horário, alguém responde na hora ou fica pra manhã?`
+  },
+  {
+    id: 'script2', numero: 2, nome: 'Após dor confirmada', categoria: 'Funil',
+    texto: `Entendi. O que acontece é: paciente sem resposta rápida vai no Google e agenda no primeiro que respondeu.
+Tenho um vídeo de 40 segundos mostrando o assistente respondendo na prática, com nome e procedimentos de uma clínica odontológica da região.
+Posso mandar?`
+  },
+  {
+    id: 'script3', numero: 3, nome: 'Preço', categoria: 'Funil',
+    texto: `Configuração personalizada pra clínica: R$ 500 único.
+Manutenção + suporte 24/7: R$ 350/mês.
+Na prática: se o bot puxar 1 ou 2 pacientes por mês que iriam pra concorrência por falta de resposta, já se paga.
+Quer ver como ficaria com os procedimentos da [Nome da Clínica]?`
+  },
+  {
+    id: 'script4', numero: 4, nome: 'Objeção secretária', categoria: 'Funil',
+    texto: `Faz sentido! A ideia não é substituir ela.
+A IA atende de madrugada e fim de semana. Quando a secretária chega de manhã, já encontra nome, necessidade e horário preferido do paciente organizados.
+Ela ganha tempo pra focar no atendimento presencial.`
+  },
+  {
+    id: 'script5', numero: 5, nome: 'Follow-up', categoria: 'Funil',
+    texto: `Oi, Dr. [Nome]! Passando rápido.
+Posso montar uma demonstração com o nome e os procedimentos da [Clínica] pra você ver funcionando antes de qualquer decisão?`
+  },
+  {
+    id: 'script6', numero: 6, nome: 'Sem interesse', categoria: 'Objeções',
+    texto: `Tudo bem, Dr. [Nome]! Obrigado por responder.
+Se um dia quiser dar uma olhada, é só chamar.
+Sucesso pra vocês!`
+  },
+  {
+    id: 'script7', numero: 7, nome: 'Vou ver com o dono', categoria: 'Objeções',
+    texto: `Claro!
+Posso te mandar um resumo rápido pra você encaminhar pra ele, ou já falar direto com ele se for mais fácil pra vocês.
+O que funciona melhor?`
+  },
+  {
+    id: 'script8', numero: 8, nome: 'Contato direto com o dono', categoria: 'Contato direto',
+    texto: `Olá, Dr. [Nome], tudo bem?
+Sou estudante de medicina aqui em Itajaí. [Nome da secretária] comentou que vocês tiveram interesse num assistente de WhatsApp que desenvolvi pra clínicas.
+Posso te mostrar como funciona? É rápido.`
+  }
+];
+
+const SCRIPT_POR_STATUS = {
+  'Novo':'script1','Contatado':'script2','Aguardando':'script5',
+  'Demo marcada':'script3','Proposta enviada':'script4'
+};
+
+function highlightPlaceholders(texto){
+  return esc(texto).replace(/\[([^\]]+)\]/g, '<mark class="script-placeholder">[$1]</mark>');
+}
+
+function extrairNomeClinica(nomeProspect){
+  if(!nomeProspect) return '';
+  const partes = nomeProspect.split(' - ');
+  return (partes.length > 1 ? partes.slice(1).join(' - ') : nomeProspect).trim();
+}
+
+function substituirPlaceholdersScript(texto, prospect){
+  const nomeContato = (prospect.nomeContato || '').trim();
+  const nomeClinica = extrairNomeClinica(prospect.nome);
+  let resultado = texto;
+  if(nomeContato){
+    resultado = resultado.split('[Nome]').join(nomeContato);
+    resultado = resultado.split('[Nome da secretária]').join(nomeContato);
+  }
+  if(nomeClinica){
+    resultado = resultado.split('[Nome da Clínica]').join(nomeClinica);
+    resultado = resultado.split('[Clínica]').join(nomeClinica);
+  }
+  return resultado;
+}
+
+function formatDateHoraBR(isoStr){
+  if(!isoStr) return '-';
+  const d = new Date(isoStr);
+  return d.toLocaleString('pt-BR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+
+const STATUS_ANTIGO_PARA_NOVO = {
+  'Mapeado':'Novo','Contatado':'Contatado','Interessado':'Aguardando','Demo enviado':'Demo marcada',
+  'Negociando':'Proposta enviada','Fechado':'Fechado','Sem resposta':'Aguardando','Recusou':'Perdido'
+};
+const ESPECIALIDADE_ANTIGA_PARA_TIPO = ['Odontologia','Dermatologia','Fisioterapia','Clínica Médica','Estética'];
+
+function migrarProspects(){
+  if(!db || !db.prospects || !db.prospects.length) return false;
+  let mudou = false;
+  db.prospects = db.prospects.map(p => {
+    if(p.nome !== undefined) return p;
+    mudou = true;
+    const nome = (p.responsavel ? `${p.responsavel} - ${p.nomeClinica||''}` : (p.nomeClinica||'')).trim() || 'Prospect sem nome';
+    const tipo = ESPECIALIDADE_ANTIGA_PARA_TIPO.includes(p.especialidade) ? 'Clínica' : 'Outro';
+    const status = STATUS_ANTIGO_PARA_NOVO[p.statusFunil] || 'Novo';
+    const observacoes = [p.observacoes, p.origem ? `Origem: ${p.origem}` : ''].filter(Boolean).join(' · ');
+    return {
+      id: p.id,
+      nome,
+      nomeContato: p.responsavel || '',
+      tipo,
+      cidadeBairro: p.cidade || '',
+      whatsapp: p.whatsapp || '',
+      dataPrimeiroContato: p.dataUltimoContato || (p.criadoEm ? p.criadoEm.slice(0,10) : ''),
+      status,
+      proximoPasso: '',
+      observacoes,
+      criadoEm: p.criadoEm || new Date().toISOString(),
+      convertidoClienteId: p.convertidoClienteId || null,
+      fechadoEm: status==='Fechado' ? (p.criadoEm||null) : null,
+      perdidoEm: status==='Perdido' ? (p.criadoEm||null) : null,
+      mensagens: (p.mensagens||[]).map(m => ({id:m.id, data:m.data, template:m.template, observacao:m.observacao||''}))
+    };
+  });
+  return mudou;
+}
+
+function prospectsFiltrados(){
+  return db.prospects.filter(p => {
+    if(filtrosProspects.tipo && p.tipo !== filtrosProspects.tipo) return false;
+    if(filtrosProspects.statusFunil && p.status !== filtrosProspects.statusFunil) return false;
+    if(filtrosProspects.busca){
+      const q = filtrosProspects.busca.toLowerCase();
+      const matchNome = p.nome.toLowerCase().includes(q);
+      const matchCidade = (p.cidadeBairro||'').toLowerCase().includes(q);
+      if(!matchNome && !matchCidade) return false;
+    }
+    return true;
+  });
+}
+
+const DIAS_LIMITE_FOLLOWUP = 2;
+
+function prospectsPrecisandoFollowUp(){
+  const agora = Date.now();
+  return db.prospects
+    .filter(p => !STATUS_TERMINAL.includes(p.status))
+    .map(p => {
+      const msgs = (p.mensagens || []).slice().sort((a,b) => b.data.localeCompare(a.data));
+      if(!msgs.length) return null;
+      const dias = Math.floor((agora - new Date(msgs[0].data).getTime()) / 86400000);
+      if(dias < DIAS_LIMITE_FOLLOWUP) return null;
+      return {prospect:p, dias, ultimoTemplate: msgs[0].template};
+    })
+    .filter(Boolean)
+    .sort((a,b) => b.dias - a.dias);
+}
+
+function renderFollowUpCard(){
+  const lista = prospectsPrecisandoFollowUp();
+  if(!lista.length) return '';
+  const itens = lista.map(item => `<div class="line">
+    <span>
+      <button type="button" class="link-nome" data-action="ver-historico-prospect" data-id="${item.prospect.id}">${esc(item.prospect.nome)}</button>
+      <span class="badge ${BADGE_STATUS[item.prospect.status]||'badge-blue'}" style="margin-left:8px">${esc(item.prospect.status)}</span>
+    </span>
+    <span class="text-secondary">${item.dias} dia${item.dias===1?'':'s'} sem contato · último: ${esc(item.ultimoTemplate)}</span>
+  </div>`).join('');
+  return `<div class="card card-alert">
+    <h3 style="margin-bottom:4px">Precisa de follow-up (${lista.length})</h3>
+    <p class="text-secondary" style="margin-bottom:12px">Prospects em aberto sem nenhum contato há ${DIAS_LIMITE_FOLLOWUP}+ dias.</p>
+    ${itens}
+  </div>`;
+}
+
+function renderProspectCard(p){
+  const ativo = !STATUS_TERMINAL.includes(p.status);
+  const scriptSugerido = SCRIPT_POR_STATUS[p.status];
+  return `<div class="prospect-card">
+    <div class="prospect-card-header">
+      <button type="button" class="link-nome" data-action="ver-historico-prospect" data-id="${p.id}" title="Ver histórico">${esc(p.nome)}</button>
+      <span class="badge badge-blue">${esc(p.tipo)}</span>
+    </div>
+    <div class="text-secondary" style="margin-bottom:4px">${esc(p.cidadeBairro) || '-'}${p.whatsapp ? ' · '+esc(p.whatsapp) : ''}</div>
+    ${p.proximoPasso ? `<div style="font-size:13px;margin-bottom:8px"><strong>Próximo passo:</strong> ${esc(p.proximoPasso)}</div>` : ''}
+    <div class="btn-row" style="margin-bottom:8px">
+      <button type="button" class="badge-btn" data-action="status-quick-menu" data-id="${p.id}" title="Mover pra outro status">
+        <span class="badge ${BADGE_STATUS[p.status]||'badge-blue'}">${esc(p.status)} ▾</span>
+      </button>
+    </div>
+    <div class="btn-row">
+      ${ativo && scriptSugerido ? `<button type="button" class="btn btn-sm btn-primary" data-action="ver-script" data-id="${p.id}" data-script="${scriptSugerido}">Ver script</button>` : ''}
+      ${ativo && p.status!=='Proposta enviada' ? `<button type="button" class="btn btn-sm btn-success" data-action="avancar-status-prospect" data-id="${p.id}">Avançar</button>` : ''}
+      ${ativo ? `<button type="button" class="btn btn-sm btn-secondary" data-action="editar-prospect" data-id="${p.id}">Editar</button>` : ''}
+      <button type="button" class="btn btn-sm btn-danger" data-action="remover-prospect" data-id="${p.id}">Remover</button>
+    </div>
+  </div>`;
+}
+
+function renderProspects(){
+  const lista = prospectsFiltrados();
+  const ativos = db.prospects.filter(p => !STATUS_TERMINAL.includes(p.status)).length;
+  const mesAtual = currentMonth();
+  const fechadosMes = db.prospects.filter(p => p.status==='Fechado' && p.fechadoEm && p.fechadoEm.slice(0,7)===mesAtual).length;
+  const perdidos = db.prospects.filter(p => p.status==='Perdido').length;
+
+  const grupos = ALL_STATUS.map(status => {
+    const itens = lista.filter(p => p.status === status);
+    if(!itens.length) return '';
+    return `<div class="status-group">
+      <div class="status-group-header">
+        <span class="badge ${BADGE_STATUS[status]||'badge-blue'}">${esc(status)}</span>
+        <span class="text-secondary">${itens.length}</span>
+      </div>
+      ${itens.map(renderProspectCard).join('')}
+    </div>`;
+  }).join('');
+
+  return `<div class="section-header"><button class="btn btn-primary" data-action="novo-prospect">+ Novo prospect</button></div>
+
+  <div class="cards">
+    <div class="card"><div class="card-label">Prospects ativos</div><div class="card-value" style="color:var(--purple)">${ativos}</div></div>
+    <div class="card"><div class="card-label">Fechados este mês</div><div class="card-value" style="color:var(--green)">${fechadosMes}</div></div>
+    <div class="card"><div class="card-label">Perdidos</div><div class="card-value" style="color:var(--red)">${perdidos}</div></div>
+  </div>
+
+  ${renderFollowUpCard()}
+
+  <div class="filters-bar">
+    <input type="text" id="busca-prospects" placeholder="Buscar por nome ou cidade/bairro..." value="${esc(filtrosProspects.busca)}">
+    <select id="filtro-tipo">
+      <option value="" ${filtrosProspects.tipo===''?'selected':''}>Todos os tipos</option>
+      ${renderOptions(TIPOS_PROSPECT, filtrosProspects.tipo)}
+    </select>
+    <select id="filtro-status-funil">
+      <option value="" ${filtrosProspects.statusFunil===''?'selected':''}>Todos os status</option>
+      ${renderOptions(ALL_STATUS, filtrosProspects.statusFunil)}
+    </select>
+  </div>
+
+  ${grupos || '<p class="text-secondary">Nenhum prospect encontrado.</p>'}`;
+}
+
+function prospectFormFields(prospect){
+  const hoje = new Date().toISOString().slice(0,10);
+  const temHistorico = prospect && prospect.mensagens && prospect.mensagens.length;
+  return `
+      <div class="form-group"><label>Nome do prospect *</label><input type="text" name="nome" value="${esc(prospect?prospect.nome:'')}" placeholder="Dr. Carlos - Clínica Sorriso" required></div>
+      <div class="form-group"><label>Nome do contato (pra personalizar os scripts)</label><input type="text" name="nomeContato" value="${esc(prospect?prospect.nomeContato:'')}" placeholder="Carlos"></div>
+      <div class="form-group"><label>Tipo</label><select name="tipo">${renderOptions(TIPOS_PROSPECT, prospect?prospect.tipo:'Clínica')}</select></div>
+      <div class="form-group"><label>Cidade/Bairro</label><input type="text" name="cidadeBairro" value="${esc(prospect?prospect.cidadeBairro:'')}" placeholder="Itajaí - Centro"></div>
+      <div class="form-group"><label>WhatsApp</label><input type="text" id="whatsapp" name="whatsapp" value="${esc(prospect?prospect.whatsapp:'')}" placeholder="(00) 00000-0000"></div>
+      <div class="form-group"><label>Data do primeiro contato</label><input type="text" class="input-data-br" name="dataPrimeiroContato" value="${prospect ? formatDateBR(prospect.dataPrimeiroContato) : formatDateBR(hoje)}" placeholder="DD/MM/AAAA" maxlength="10" inputmode="numeric"></div>
+      <div class="form-group"><label>Status</label><select name="status">${renderOptions(ALL_STATUS, prospect?prospect.status:'Novo')}</select></div>
+      <div class="form-group"><label>Próximo passo</label><input type="text" name="proximoPasso" value="${esc(prospect?prospect.proximoPasso:'')}" placeholder="Ligar quinta-feira"></div>
+      <div class="form-group"><label>Observações</label><textarea name="observacoes" rows="3">${esc(prospect?prospect.observacoes:'')}</textarea></div>
+      ${temHistorico ? `<div class="form-group"><label>Histórico de scripts enviados</label>${renderHistoricoMensagens(prospect)}</div>` : ''}`;
+}
+
+function openProspectForm(prospectId){
+  const prospect = prospectId ? db.prospects.find(p => p.id===prospectId) : null;
+  openModal(`<div class="modal"><h2>${prospect ? 'Editar prospect' : 'Novo prospect'}</h2>
+    <form id="form-prospect" data-id="${prospect?prospect.id:''}">
+      ${prospectFormFields(prospect)}
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" data-action="close-modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar</button>
+      </div>
+    </form>
+  </div>`);
+}
+
+/* ---------- Prospecção: scripts e histórico ---------- */
+
+function openHistoricoProspect(prospectId){
+  const prospect = db.prospects.find(p => p.id===prospectId);
+  if(!prospect) return;
+  openModal(`<div class="modal modal-lg">
+    <div class="card-header-row">
+      <h2 style="margin-bottom:0">${esc(prospect.nome)}</h2>
+      <button type="button" class="btn btn-secondary btn-sm" data-action="close-modal">Fechar</button>
+    </div>
+    <p class="text-secondary" style="margin:8px 0 16px">Histórico de scripts copiados.</p>
+    ${renderHistoricoMensagens(prospect)}
+  </div>`);
+}
+
+function renderHistoricoMensagens(prospect){
+  const mensagens = (prospect.mensagens || []).slice().sort((a,b) => b.data.localeCompare(a.data));
+  const rows = mensagens.map(m => `<div class="msg-card">
+    <div class="msg-card-header">
+      <span><strong>${esc(m.template)}</strong></span>
+      <span class="text-secondary">${formatDateHoraBR(m.data)}</span>
+    </div>
+    <input type="text" class="obs-input" data-msg-id="${m.id}" data-prospect-id="${prospect.id}" value="${esc(m.observacao||'')}" placeholder="Observação (ex: Respondeu que vai pensar)">
+    <div style="margin-top:8px;text-align:right">
+      <button type="button" class="btn btn-sm btn-danger" data-action="remover-msg-historico" data-id="${prospect.id}" data-msg-id="${m.id}">Remover</button>
+    </div>
+  </div>`).join('');
+  return rows || '<p class="text-secondary">Nenhum script registrado ainda.</p>';
+}
+
+function openScriptModal(prospectId, scriptId){
+  const prospect = db.prospects.find(p => p.id===prospectId);
+  const script = SCRIPTS_PROSPECCAO.find(s => s.id===scriptId);
+  if(!prospect || !script) return;
+
+  const categorias = ['Funil', 'Objeções', 'Contato direto'];
+  const grupos = categorias.map(cat => {
+    const itens = SCRIPTS_PROSPECCAO.filter(s => s.categoria === cat);
+    if(!itens.length) return '';
+    const botoes = itens.map(s =>
+      `<button type="button" class="btn btn-sm ${s.id===script.id?'btn-primary':'btn-secondary'}" data-action="trocar-script" data-id="${prospect.id}" data-script="${s.id}">${s.numero} · ${esc(s.nome)}</button>`
+    ).join('');
+    return `<div style="margin-bottom:8px">
+      <span class="text-secondary" style="font-size:11px;text-transform:uppercase;letter-spacing:0.03em">${esc(cat)}</span><br>
+      <span style="display:inline-flex;gap:6px;flex-wrap:wrap;margin-top:4px">${botoes}</span>
+    </div>`;
+  }).join('');
+
+  const textoFinal = substituirPlaceholdersScript(script.texto, prospect);
+
+  openModal(`<div class="modal modal-lg">
+    <h2>Script ${script.numero} — ${esc(script.nome)}</h2>
+    <p class="text-secondary" style="margin-bottom:4px">Sugerido pro status atual: <strong>${esc(prospect.status)}</strong></p>
+    <div style="margin-bottom:14px">${grupos}</div>
+    <div class="script-preview">${highlightPlaceholders(textoFinal)}</div>
+    <div class="form-group"><label>Editar antes de copiar</label><textarea id="template-texto" rows="8">${esc(textoFinal)}</textarea></div>
+    <div class="modal-actions" style="justify-content:space-between">
+      <button type="button" class="btn btn-secondary" data-action="close-modal">Fechar</button>
+      <button type="button" class="btn btn-primary" data-action="copiar-script" data-id="${prospect.id}" data-script="${script.id}">Copiar</button>
+    </div>
+  </div>`);
+}
+
+async function copiarScript(prospectId, scriptId){
+  const el = document.getElementById('template-texto');
+  if(!el) return;
+  const texto = el.value;
+  try{
+    await navigator.clipboard.writeText(texto);
+  } catch(err){
+    try{
+      el.focus();
+      el.select();
+      document.execCommand('copy');
+    } catch(err2){
+      toast('Não foi possível copiar o texto', 'error');
+      return;
+    }
+  }
+  await registrarUsoScript(prospectId, scriptId);
+  toast('Script copiado', 'success');
+}
+
+async function registrarUsoScript(prospectId, scriptId){
+  const prospect = db.prospects.find(p => p.id===prospectId);
+  const script = SCRIPTS_PROSPECCAO.find(s => s.id===scriptId);
+  if(!prospect || !script) return;
+  if(!prospect.mensagens) prospect.mensagens = [];
+  prospect.mensagens.push({id:uuid(), data:new Date().toISOString(), template:`Script ${script.numero} — ${script.nome}`, observacao:''});
+  await persist();
+  render();
+  openScriptModal(prospectId, scriptId);
+}
+
+async function avancarStatusProspect(id){
+  const prospect = db.prospects.find(p => p.id===id);
+  if(!prospect) return;
+  const idx = STATUS_PIPELINE.indexOf(prospect.status);
+  if(idx === -1 || idx >= STATUS_PIPELINE.length-1) return;
+  prospect.status = STATUS_PIPELINE[idx+1];
+  await persist();
+  render();
+  toast(`Status atualizado para "${prospect.status}"`, 'success');
+}
+
+function openStatusQuickMenu(prospectId){
+  const prospect = db.prospects.find(p => p.id===prospectId);
+  if(!prospect) return;
+  const linhas = ALL_STATUS.map(s => `<button type="button" class="status-pick-btn ${s===prospect.status?'active':''}" data-action="definir-status-prospect" data-id="${prospect.id}" data-status="${s}">
+    <span class="badge ${BADGE_STATUS[s]||'badge-blue'}">${esc(s)}</span>${s===prospect.status ? ' <span class="text-secondary">(atual)</span>' : ''}
+  </button>`).join('');
+  openModal(`<div class="modal">
+    <h2>Mover — ${esc(prospect.nome)}</h2>
+    <p class="text-secondary" style="margin-bottom:12px">Toque num status pra mover o prospect direto pra lá.</p>
+    ${linhas}
+    <div class="modal-actions"><button type="button" class="btn btn-secondary" data-action="close-modal">Fechar</button></div>
+  </div>`);
+}
+
+async function definirStatusProspect(id, novoStatus){
+  const prospect = db.prospects.find(p => p.id===id);
+  if(!prospect) return;
+  closeModal();
+  if(novoStatus === prospect.status) return;
+  if(novoStatus === 'Fechado'){ openClienteForm(null, id); return; }
+  if(novoStatus === 'Perdido'){ await confirmMarcarPerdido(id); return; }
+  prospect.status = novoStatus;
+  await persist();
+  render();
+  toast(`Status atualizado para "${novoStatus}"`, 'success');
+}
+
+async function confirmMarcarPerdido(id){
+  const ok = await showConfirm('Marcar este prospect como perdido? Ele sai do funil ativo, mas continua no histórico.');
+  if(!ok) return;
+  const prospect = db.prospects.find(p => p.id===id);
+  if(!prospect) return;
+  prospect.status = 'Perdido';
+  prospect.perdidoEm = new Date().toISOString();
+  await persist();
+  render();
+  toast('Prospect marcado como perdido', 'success');
+}
+
+async function atualizarObservacaoMensagem(prospectId, msgId, valor){
+  const prospect = db.prospects.find(p => p.id===prospectId);
+  if(!prospect) return;
+  const msg = (prospect.mensagens||[]).find(m => m.id===msgId);
+  if(!msg) return;
+  msg.observacao = valor;
+  await persist();
+}
+
+async function confirmRemoverMensagemHistorico(prospectId, msgId){
+  const ok = await showConfirm('Tem certeza que deseja remover este registro do histórico? Essa ação não pode ser desfeita.');
+  if(ok){
+    const prospect = db.prospects.find(p => p.id===prospectId);
+    if(prospect){
+      prospect.mensagens = (prospect.mensagens||[]).filter(m => m.id!==msgId);
+      await persist();
+      toast('Registro removido', 'success');
+    }
+  }
+  openHistoricoProspect(prospectId);
+}
+
+async function submitProspectForm(form){
+  const nome = form.elements.nome.value.trim();
+  if(!nome){ toast('Nome do prospect é obrigatório','error'); return; }
+  const whatsapp = form.elements.whatsapp.value.trim();
+  if(whatsapp && !/^\(\d{2}\) \d{4,5}-\d{4}$/.test(whatsapp)){ toast('WhatsApp inválido. Use (XX) XXXXX-XXXX (celular), (XX) XXXX-XXXX (fixo) ou deixe em branco','error'); return; }
+  const dataPrimeiroContatoISO = dateBRParaISO(form.elements.dataPrimeiroContato.value);
+  if(dataPrimeiroContatoISO === null){ toast('Data do primeiro contato inválida. Use o formato DD/MM/AAAA','error'); return; }
+
+  const isEdit = !!form.dataset.id;
+  const id = form.dataset.id || uuid();
+  const existing = isEdit ? db.prospects.find(p => p.id===id) : null;
+
+  const prospect = {
+    id,
+    nome,
+    nomeContato: form.elements.nomeContato.value.trim(),
+    tipo: form.elements.tipo.value,
+    cidadeBairro: form.elements.cidadeBairro.value.trim(),
+    whatsapp,
+    dataPrimeiroContato: dataPrimeiroContatoISO,
+    status: form.elements.status.value,
+    proximoPasso: form.elements.proximoPasso.value.trim(),
+    observacoes: form.elements.observacoes.value.trim(),
+    criadoEm: existing ? existing.criadoEm : new Date().toISOString(),
+    convertidoClienteId: existing ? existing.convertidoClienteId||null : null,
+    fechadoEm: existing ? existing.fechadoEm||null : null,
+    perdidoEm: existing ? existing.perdidoEm||null : null,
+    mensagens: existing ? (existing.mensagens || []) : []
+  };
+
+  if(isEdit){
+    const idx = db.prospects.findIndex(p => p.id===id);
+    db.prospects[idx] = prospect;
+  } else {
+    db.prospects.push(prospect);
+  }
+
+  await persist();
+  closeModal();
+  render();
+  toast(isEdit ? 'Prospect atualizado' : 'Prospect cadastrado', 'success');
+}
+
+async function confirmRemoverProspect(id){
+  const ok = await showConfirm('Tem certeza que deseja remover este prospect? Essa ação não pode ser desfeita.');
+  if(!ok) return;
+  db.prospects = db.prospects.filter(p => p.id!==id);
+  await persist();
+  render();
+  toast('Prospect removido', 'success');
+}
+
+/* ---------- Financeiro ---------- */
+
+function renderFinanceiro(){
+  const mes = mesFinanceiro;
+  const mensalidadesSum = mensalidadesDoMes(mes);
+  const setupsSum = setupsRecebidosNoMes(mes);
+  const receitaTotal = mensalidadesSum + setupsSum;
+
+  const vps = db.config.vpsValor;
+  const apiTotal = custoAPITotalMes();
+  const mei = db.config.meiAtivo ? db.config.meiValor : 0;
+  const outros = outrosCustosDoMes(mes);
+  const outrosSum = outros.reduce((s,o) => s+Number(o.valor), 0);
+  const custosTotal = vps+apiTotal+mei+outrosSum;
+  const resultado = receitaTotal-custosTotal;
+
+  const recebimentos = recebimentosDoMes(mes);
+
+  const outrosRows = outros.map(o => `<tr>
+    <td>${esc(o.descricao)}</td><td>${formatCurrency(o.valor)}</td>
+    <td><button class="btn btn-sm btn-danger" data-action="remover-outro-custo" data-id="${o.id}">Remover</button></td>
+  </tr>`).join('');
+
+  const recebRows = recebimentos.map(r => `<tr>
+    <td>${formatDateBR(r.data)}</td><td>${esc(r.cliente)}</td><td>${r.tipo}</td><td>${formatCurrency(r.valor)}</td>
+  </tr>`).join('');
+
+  return `
+  <div class="section-header">
+    <input type="month" id="mes-financeiro-input" value="${mes}">
+  </div>
+
+  <div class="cards">
+    <div class="card"><div class="card-label">Receita total</div><div class="card-value" style="color:var(--green)">${formatCurrency(receitaTotal)}</div></div>
+    <div class="card"><div class="card-label">Custos totais</div><div class="card-value" style="color:var(--red)">${formatCurrency(custosTotal)}</div></div>
+    <div class="card"><div class="card-label">Resultado</div><div class="card-value" style="color:${resultado>=0?'var(--green)':'var(--red)'}">${formatCurrency(resultado)}</div></div>
+  </div>
+
+  <div class="finance-grid">
+    <div class="card">
+      <h3>Receita</h3>
+      <div class="line"><span>Mensalidades</span><span>${formatCurrency(mensalidadesSum)}</span></div>
+      <div class="line"><span>Setups recebidos</span><span>${formatCurrency(setupsSum)}</span></div>
+    </div>
+    <div class="card">
+      <div class="card-header-row"><h3>Custos</h3><button type="button" class="link-config" data-action="nav" data-section="config">editar em Configurações</button></div>
+      <div class="line"><span>VPS</span><span>${formatCurrency(vps)}</span></div>
+      <div class="line"><span>API Gemini (clientes ativos)</span><span>${formatCurrency(apiTotal)}</span></div>
+      <div class="line"><span>MEI ${db.config.meiAtivo?'':'(inativo)'}</span><span>${formatCurrency(mei)}</span></div>
+      <div class="line"><span>Outros</span><span>${formatCurrency(outrosSum)}</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Outros custos do mês</h3>
+    <div class="table-wrap"><table class="table"><tbody>${outrosRows || '<tr><td class="empty">Nenhum custo adicional neste mês.</td></tr>'}</tbody></table></div>
+    <div class="form-row" style="margin-top:12px">
+      <input type="text" id="outro-desc" placeholder="Descrição">
+      <input type="number" id="outro-valor" placeholder="Valor (R$)" step="0.01" min="0">
+      <button class="btn btn-secondary" data-action="add-outro-custo" style="white-space:nowrap">Adicionar</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Receita vs. custos — últimos 6 meses</h3>
+    <div class="chart-container"><canvas id="grafico-financeiro"></canvas></div>
+  </div>
+
+  <div class="card">
+    <h3>Recebimentos do mês</h3>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>Data</th><th>Cliente</th><th>Tipo</th><th>Valor</th></tr></thead>
+      <tbody>${recebRows || '<tr><td colspan="4" class="empty">Nenhum recebimento neste mês.</td></tr>'}</tbody>
+    </table></div>
+  </div>
+  `;
+}
+
+function desenharGraficoFinanceiro(){
+  const canvas = document.getElementById('grafico-financeiro');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const cssWidth = canvas.parentElement.clientWidth;
+  const cssHeight = 260;
+  canvas.width = cssWidth*dpr;
+  canvas.height = cssHeight*dpr;
+  canvas.style.width = cssWidth+'px';
+  canvas.style.height = cssHeight+'px';
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0,0,cssWidth,cssHeight);
+
+  const meses = ultimosMeses(mesFinanceiro, 6);
+  const receitas = meses.map(m => receitaDoMes(m));
+  const custos = meses.map(m => custosDoMes(m));
+  const max = Math.max(1, ...receitas, ...custos);
+
+  const padding = {top:20, right:10, bottom:30, left:10};
+  const chartW = cssWidth - padding.left - padding.right;
+  const chartH = cssHeight - padding.top - padding.bottom;
+  const groupW = chartW/meses.length;
+  const barW = Math.min(28, groupW/3);
+
+  ctx.strokeStyle = '#2d3748';
+  ctx.beginPath();
+  ctx.moveTo(padding.left, padding.top+chartH);
+  ctx.lineTo(padding.left+chartW, padding.top+chartH);
+  ctx.stroke();
+
+  meses.forEach((m,i) => {
+    const gx = padding.left + i*groupW + groupW/2;
+    const hR = (receitas[i]/max)*chartH;
+    const hC = (custos[i]/max)*chartH;
+    ctx.fillStyle = '#22c55e';
+    ctx.fillRect(gx-barW-2, padding.top+chartH-hR, barW, hR);
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(gx+2, padding.top+chartH-hC, barW, hC);
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(formatMesLabel(m), gx, padding.top+chartH+18);
+  });
+
+  ctx.fillStyle = '#22c55e';
+  ctx.fillRect(padding.left, 2, 10, 10);
+  ctx.fillStyle = '#94a3b8';
+  ctx.textAlign = 'left';
+  ctx.fillText('Receita', padding.left+16, 11);
+  ctx.fillStyle = '#ef4444';
+  ctx.fillRect(padding.left+80, 2, 10, 10);
+  ctx.fillStyle = '#94a3b8';
+  ctx.fillText('Custos', padding.left+96, 11);
+}
+
+async function addOutroCusto(){
+  const descEl = document.getElementById('outro-desc');
+  const valorEl = document.getElementById('outro-valor');
+  const desc = descEl.value.trim();
+  const valor = Number(valorEl.value);
+  if(!desc || !valor || valor<=0){ toast('Informe descrição e valor válidos','error'); return; }
+  db.outrosCustos.push({id:uuid(), mes:mesFinanceiro, descricao:desc, valor});
+  await persist();
+  render();
+  toast('Custo adicionado', 'success');
+}
+
+async function confirmRemoverOutroCusto(id){
+  const ok = await showConfirm('Remover este custo?');
+  if(!ok) return;
+  db.outrosCustos = db.outrosCustos.filter(o => o.id!==id);
+  await persist();
+  render();
+  toast('Custo removido', 'success');
+}
+
+/* ---------- Contrato PDF ---------- */
+
+function slugify(str){
+  return String(str||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') || 'cliente';
+}
+
+let jsPDFLoadingPromise = null;
+function carregarJsPDF(){
+  if(window.jspdf && window.jspdf.jsPDF) return Promise.resolve(true);
+  if(jsPDFLoadingPromise) return jsPDFLoadingPromise;
+  jsPDFLoadingPromise = new Promise(resolve => {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    script.onload = () => resolve(true);
+    script.onerror = () => { jsPDFLoadingPromise = null; resolve(false); };
+    document.head.appendChild(script);
+  });
+  return jsPDFLoadingPromise;
+}
+
+async function gerarContratoPDF(form){
+  if(!form) return;
+  const nomeClinica = form.elements.nomeClinica.value.trim();
+  if(!nomeClinica){ toast('Preencha o nome da clínica antes de gerar o contrato','error'); return; }
+  const responsavel = form.elements.responsavel.value.trim();
+  const setupValor = Number(form.elements.setupValor.value) || 0;
+  const mensalidade = Number(form.elements.mensalidade.value) || 0;
+
+  const ok = await carregarJsPDF();
+  if(!ok){ toast('Não foi possível carregar a biblioteca de PDF. Verifique sua conexão com a internet.', 'error'); return; }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const hoje = new Date();
+  const dataEmissao = hoje.toLocaleDateString('pt-BR');
+  const nomePrestador = db.config.nomePrestador || 'Yago Ballester Gianni';
+
+  let y = 20;
+  const left = 20;
+  const right = 190;
+  const lineHeight = 6;
+
+  function addTitulo(texto){
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(14);
+    doc.text(texto, 105, y, {align:'center', maxWidth:170});
+    y += 16;
+  }
+  function addSubtitulo(texto){
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(11);
+    doc.text(texto, left, y);
+    y += lineHeight+1;
+  }
+  function addParagrafo(texto){
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(10);
+    const linhas = doc.splitTextToSize(texto, right-left);
+    linhas.forEach(l => {
+      if(y > 275){ doc.addPage(); y = 20; }
+      doc.text(l, left, y);
+      y += lineHeight;
+    });
+    y += 2;
+  }
+
+  addTitulo('Contrato de Prestação de Serviços — Assistente Virtual WhatsApp');
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(10);
+  doc.text(`Data de emissão: ${dataEmissao}`, left, y);
+  y += 10;
+
+  addSubtitulo('Contratante');
+  addParagrafo(`${nomeClinica}${responsavel ? ', representada por ' + responsavel : ''}.`);
+
+  addSubtitulo('Contratada');
+  addParagrafo(`${nomePrestador}, prestador de serviços de tecnologia.`);
+
+  addSubtitulo('Objeto');
+  addParagrafo('Configuração e manutenção de assistente virtual com inteligência artificial no WhatsApp para atendimento de pacientes.');
+
+  addSubtitulo('Escopo incluso');
+  addParagrafo('Configuração completa do bot, integração com WhatsApp, prompt personalizado para a clínica e suporte técnico.');
+
+  addSubtitulo('Escopo não incluso');
+  addParagrafo('Mudanças de escopo após a entrega, integrações com outros sistemas e criação de conteúdo além do prompt inicial.');
+
+  addSubtitulo('Valores');
+  addParagrafo(`Setup: ${formatCurrency(setupValor)} (pagamento único na assinatura). Mensalidade: ${formatCurrency(mensalidade)}/mês.`);
+
+  addSubtitulo('Prazo de entrega');
+  addParagrafo('Até 48 horas após a confirmação do pagamento do setup.');
+
+  addSubtitulo('SLA de suporte');
+  addParagrafo('Resposta em até 12 horas úteis.');
+
+  addSubtitulo('Cancelamento');
+  addParagrafo('Aviso com 30 dias de antecedência, sem multa.');
+
+  y += 12;
+  if(y > 255){ doc.addPage(); y = 20; }
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(10);
+  doc.text('Itajaí/SC, ' + dataEmissao, left, y);
+  y += 22;
+  doc.line(left, y, 95, y);
+  doc.line(115, y, right, y);
+  doc.text('Contratante', left, y+5);
+  doc.text('Contratada', 115, y+5);
+
+  doc.save(`contrato-${slugify(nomeClinica)}-${hoje.toISOString().slice(0,10)}.pdf`);
+  toast('Contrato PDF gerado', 'success');
+}
+
+/* ---------- Configurações ---------- */
+
+function renderConfiguracoes(){
+  return `
+  <div class="card">
+    <h3>Parâmetros financeiros</h3>
+    <form id="form-config">
+      <div class="form-row">
+        <div class="form-group"><label>Câmbio do dólar (R$)</label><input type="number" step="0.01" min="0" name="cambioDolar" value="${db.config.cambioDolar}" required></div>
+        <div class="form-group"><label>VPS (R$/mês)</label><input type="number" step="0.01" min="0" name="vpsValor" value="${db.config.vpsValor}" required></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>MEI (R$/mês)</label><input type="number" step="0.01" min="0" name="meiValor" value="${db.config.meiValor}" required></div>
+        <div class="form-group checkbox"><label><input type="checkbox" name="meiAtivo" ${db.config.meiAtivo?'checked':''}> MEI ativo este mês</label></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Mensalidade padrão (R$)</label><input type="number" step="0.01" min="0" name="mensalidadePadrao" value="${db.config.mensalidadePadrao}" required></div>
+        <div class="form-group"><label>Setup padrão (R$)</label><input type="number" step="0.01" min="0" name="setupPadrao" value="${db.config.setupPadrao}" required></div>
+      </div>
+      <div class="form-group"><label>Nome do prestador (para o contrato)</label><input type="text" name="nomePrestador" value="${esc(db.config.nomePrestador || 'Yago Ballester Gianni')}" required></div>
+      <button type="submit" class="btn btn-primary">Salvar configurações</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h3>Segurança</h3>
+    <button type="button" class="btn btn-secondary" data-action="trocar-senha-toggle">${mostrarTrocarSenha?'Cancelar':'Trocar senha'}</button>
+    ${mostrarTrocarSenha ? `<form id="form-trocar-senha" style="margin-top:16px">
+      <div class="form-group"><label>Senha atual</label><input type="password" name="senhaAtual" required autocomplete="current-password"></div>
+      <div class="form-group"><label>Nova senha (mínimo 8 caracteres)</label><input type="password" name="novaSenha" minlength="8" required autocomplete="new-password"></div>
+      <div class="form-group"><label>Confirmar nova senha</label><input type="password" name="confirmarNovaSenha" minlength="8" required autocomplete="new-password"></div>
+      <button type="submit" class="btn btn-primary">Alterar senha</button>
+    </form>` : ''}
+  </div>
+
+  <div class="card">
+    <h3>Backup</h3>
+    <p class="text-secondary">Exporte seus dados regularmente para não perder informações.</p>
+    <div class="btn-row">
+      <button class="btn btn-primary" data-action="exportar-criptografado">Exportar backup (criptografado)</button>
+      <button class="btn btn-danger" data-action="exportar-descriptografado">Exportar sem criptografia</button>
+      <button class="btn btn-secondary" data-action="importar-backup">Importar backup</button>
+    </div>
+    <input type="file" id="import-file" accept=".json" style="display:none">
+  </div>
+
+  <div class="card">
+    <h3>Sobre</h3>
+    <p class="text-secondary">Gerenciador Financeiro — versão ${APP_VERSION}</p>
+  </div>
+  `;
+}
+
+async function submitConfigForm(form){
+  db.config.cambioDolar = Number(form.elements.cambioDolar.value);
+  db.config.vpsValor = Number(form.elements.vpsValor.value);
+  db.config.meiValor = Number(form.elements.meiValor.value);
+  db.config.meiAtivo = form.elements.meiAtivo.checked;
+  db.config.mensalidadePadrao = Number(form.elements.mensalidadePadrao.value);
+  db.config.setupPadrao = Number(form.elements.setupPadrao.value);
+  db.config.nomePrestador = form.elements.nomePrestador.value.trim() || 'Yago Ballester Gianni';
+  await persist();
+  render();
+  toast('Configurações salvas', 'success');
+}
+
+function toggleTrocarSenhaForm(){
+  mostrarTrocarSenha = !mostrarTrocarSenha;
+  render();
+}
+
+async function submitTrocarSenha(form){
+  const senhaAtual = form.elements.senhaAtual.value;
+  const novaSenha = form.elements.novaSenha.value;
+  const confirmarNovaSenha = form.elements.confirmarNovaSenha.value;
+
+  const hashAtual = await sha256B64(senhaAtual);
+  if(hashAtual !== localStorage.getItem('gf_pwhash')){ toast('Senha atual incorreta','error'); return; }
+  if(novaSenha.length < 8){ toast('Nova senha deve ter no mínimo 8 caracteres','error'); return; }
+  if(novaSenha !== confirmarNovaSenha){ toast('As senhas não coincidem','error'); return; }
+
+  const novoSalt = bufToBase64(crypto.getRandomValues(new Uint8Array(16)));
+  const novaChave = await deriveKey(novaSenha, novoSalt);
+  const novoHash = await sha256B64(novaSenha);
+
+  cryptoKey = novaChave;
+  localStorage.setItem('gf_salt', novoSalt);
+  localStorage.setItem('gf_pwhash', novoHash);
+  await persist();
+
+  mostrarTrocarSenha = false;
+  render();
+  toast('Senha alterada com sucesso', 'success');
+}
+
+async function exportarBackup(criptografado){
+  let payload, filename;
+  const hoje = new Date().toISOString().slice(0,10);
+  if(criptografado){
+    payload = {
+      tipo: 'gerenciador-financeiro-backup-criptografado',
+      versao: APP_VERSION,
+      salt: localStorage.getItem('gf_salt'),
+      pwhash: localStorage.getItem('gf_pwhash'),
+      data: localStorage.getItem('gf_data')
+    };
+    filename = `backup_gerenciador_${hoje}.json`;
+  } else {
+    payload = {
+      tipo: 'gerenciador-financeiro-backup-plano',
+      versao: APP_VERSION,
+      exportadoEm: new Date().toISOString(),
+      db
+    };
+    filename = `backup_gerenciador_DESCRIPTOGRAFADO_${hoje}.json`;
+  }
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('Backup exportado', 'success');
+}
+
+async function confirmExportarDescriptografado(){
+  const ok = await showConfirm('ATENÇÃO: este backup será salvo SEM criptografia, com todos os dados legíveis em texto puro. Qualquer pessoa com acesso ao arquivo poderá ler seus dados financeiros. Deseja continuar?');
+  if(!ok) return;
+  await exportarBackup(false);
+}
+
+async function handleImportFile(file){
+  if(!file) return;
+  try{
+    const text = await file.text();
+    const payload = JSON.parse(text);
+    if(payload.tipo === 'gerenciador-financeiro-backup-criptografado'){
+      const ok = await showConfirm('Importar este backup substituirá TODOS os dados atuais. Após importar, você precisará entrar com a senha usada no momento do backup. Deseja continuar?');
+      if(!ok){ document.getElementById('import-file').value=''; return; }
+      localStorage.setItem('gf_salt', payload.salt);
+      localStorage.setItem('gf_pwhash', payload.pwhash);
+      localStorage.setItem('gf_data', payload.data);
+      cryptoKey = null;
+      db = null;
+      currentSection = 'home';
+      render();
+      toast('Backup importado. Faça login novamente.', 'success');
+    } else if(payload.tipo === 'gerenciador-financeiro-backup-plano' && payload.db){
+      const ok = await showConfirm('Importar este backup substituirá TODOS os dados atuais nesta sessão. Deseja continuar?');
+      if(!ok){ document.getElementById('import-file').value=''; return; }
+      db = payload.db;
+      migrarProspects();
+      await persist();
+      render();
+      toast('Backup importado com sucesso', 'success');
+    } else {
+      toast('Arquivo de backup inválido', 'error');
+    }
+  } catch(err){
+    toast('Erro ao importar backup: arquivo inválido', 'error');
+  }
+  const fileInput = document.getElementById('import-file');
+  if(fileInput) fileInput.value = '';
+}
+
+/* ---------- Autenticação ---------- */
+
+function renderSetup(){
+  return `<div class="auth-screen"><div class="auth-card">
+    <h1>Gerenciador Financeiro</h1>
+    <p class="auth-subtitle">Primeiro acesso — crie uma senha para proteger seus dados</p>
+    <form id="form-setup">
+      <div class="form-group"><label>Senha (mínimo 8 caracteres)</label><input type="password" name="senha" minlength="8" required autocomplete="new-password"></div>
+      <div class="form-group"><label>Confirmar senha</label><input type="password" name="confirmarSenha" minlength="8" required autocomplete="new-password"></div>
+      <button type="submit" class="btn btn-primary btn-block">Criar senha e continuar</button>
+    </form>
+  </div></div>`;
+}
+
+async function submitSetup(form){
+  const senha = form.elements.senha.value;
+  const confirmarSenha = form.elements.confirmarSenha.value;
+  if(senha.length < 8){ toast('A senha deve ter no mínimo 8 caracteres','error'); return; }
+  if(senha !== confirmarSenha){ toast('As senhas não coincidem','error'); return; }
+
+  const salt = bufToBase64(crypto.getRandomValues(new Uint8Array(16)));
+  cryptoKey = await deriveKey(senha, salt);
+  const pwhash = await sha256B64(senha);
+  localStorage.setItem('gf_salt', salt);
+  localStorage.setItem('gf_pwhash', pwhash);
+
+  db = {
+    clientes: [],
+    prospects: [],
+    outrosCustos: [],
+    config: {
+      cambioDolar: 5.10,
+      vpsValor: 108.00,
+      meiValor: 75.00,
+      meiAtivo: false,
+      mensalidadePadrao: 350.00,
+      setupPadrao: 500.00,
+      nomePrestador: 'Yago Ballester Gianni'
+    }
+  };
+  await persist();
+  currentSection = 'home';
+  render();
+  toast('Bem-vindo! Sua senha foi criada.', 'success');
+}
+
+function renderLogin(){
+  return `<div class="auth-screen"><div class="auth-card">
+    <h1>Gerenciador Financeiro</h1>
+    <p class="auth-subtitle">Digite sua senha para acessar</p>
+    <form id="form-login">
+      <div class="form-group"><label>Senha</label><input type="password" name="senha" required autocomplete="current-password" autofocus></div>
+      <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+    </form>
+  </div></div>`;
+}
+
+async function submitLogin(form){
+  const senha = form.elements.senha.value;
+  const hash = await sha256B64(senha);
+  if(hash !== localStorage.getItem('gf_pwhash')){ toast('Senha incorreta','error'); return; }
+  const salt = localStorage.getItem('gf_salt');
+  try{
+    const key = await deriveKey(senha, salt);
+    const decrypted = await decryptJSON(key, localStorage.getItem('gf_data'));
+    cryptoKey = key;
+    db = decrypted;
+    const migrou = migrarProspects();
+    if(migrou) await persist();
+    currentSection = 'home';
+    render();
+  } catch(err){
+    toast('Não foi possível desbloquear os dados', 'error');
+  }
+}
+
+function bloquear(){
+  cryptoKey = null;
+  db = null;
+  currentSection = 'home';
+  mostrarTrocarSenha = false;
+  render();
+  toast('Sessão bloqueada', 'success');
+}
+
+/* ---------- Modais ---------- */
+
+function openModal(html){
+  document.getElementById('modal-root').innerHTML = `<div class="modal-overlay">${html}</div>`;
+}
+
+function closeModal(){
+  const root = document.getElementById('modal-root');
+  if(root) root.innerHTML = '';
+  confirmResolver = null;
+}
+
+function showConfirm(message){
+  return new Promise(resolve => {
+    confirmResolver = resolve;
+    openModal(`<div class="modal">
+      <p>${esc(message)}</p>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" data-action="confirm-no">Cancelar</button>
+        <button type="button" class="btn btn-danger" data-action="confirm-yes">Confirmar</button>
+      </div>
+    </div>`);
+  });
+}
+
+/* ---------- máscara whatsapp ---------- */
+
+function maskWhatsapp(v){
+  const d = v.replace(/\D/g,'').slice(0,11);
+  if(d.length === 0) return '';
+  if(d.length <= 2) return `(${d}`;
+  if(d.length <= 6) return `(${d.slice(0,2)}) ${d.slice(2)}`;
+  if(d.length <= 10) return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`;
+  return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
+}
+
+/* ---------- máscara e conversão de data (DD/MM/AAAA) ---------- */
+
+function maskDataBR(v){
+  const d = v.replace(/\D/g,'').slice(0,8);
+  if(d.length === 0) return '';
+  if(d.length <= 2) return d;
+  if(d.length <= 4) return `${d.slice(0,2)}/${d.slice(2)}`;
+  return `${d.slice(0,2)}/${d.slice(2,4)}/${d.slice(4)}`;
+}
+
+function dateBRParaISO(strBR){
+  if(!strBR || !strBR.trim()) return '';
+  const m = strBR.trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if(!m) return null;
+  const [, d, mo, y] = m;
+  const dia = Number(d), mes = Number(mo), ano = Number(y);
+  if(mes < 1 || mes > 12) return null;
+  const diasNoMes = new Date(ano, mes, 0).getDate();
+  if(dia < 1 || dia > diasNoMes) return null;
+  return `${y}-${mo}-${d}`;
+}
+
+/* ---------- delegação de eventos ---------- */
+
+async function handleClick(e){
+  if(e.target.classList && e.target.classList.contains('modal-overlay')){
+    closeModal();
+    return;
+  }
+  const btn = e.target.closest('[data-action]');
+  if(!btn) return;
+  const action = btn.dataset.action;
+  const id = btn.dataset.id;
+
+  switch(action){
+    case 'nav': currentSection = btn.dataset.section; render(); break;
+    case 'bloquear': bloquear(); break;
+    case 'novo-cliente': openClienteForm(); break;
+    case 'editar-cliente': openClienteForm(id); break;
+    case 'cancelar-cliente': await confirmCancelarCliente(id); break;
+    case 'apagar-cliente': await confirmApagarCliente(id); break;
+    case 'gerar-prompt': openPromptForm(id); break;
+    case 'novo-prospect': openProspectForm(); break;
+    case 'editar-prospect': openProspectForm(id); break;
+    case 'ver-historico-prospect': openHistoricoProspect(id); break;
+    case 'ver-script': openScriptModal(id, btn.dataset.script); break;
+    case 'trocar-script': openScriptModal(id, btn.dataset.script); break;
+    case 'copiar-script': await copiarScript(id, btn.dataset.script); break;
+    case 'avancar-status-prospect': await avancarStatusProspect(id); break;
+    case 'status-quick-menu': openStatusQuickMenu(id); break;
+    case 'definir-status-prospect': await definirStatusProspect(id, btn.dataset.status); break;
+    case 'marcar-perdido-prospect': await confirmMarcarPerdido(id); break;
+    case 'remover-msg-historico': await confirmRemoverMensagemHistorico(id, btn.dataset.msgId); break;
+    case 'remover-prospect': await confirmRemoverProspect(id); break;
+    case 'converter-prospect': openClienteForm(null, id); break;
+    case 'gerar-contrato-pdf': await gerarContratoPDF(document.getElementById('form-cliente')); break;
+    case 'close-modal': closeModal(); break;
+    case 'confirm-yes': if(confirmResolver) confirmResolver(true); closeModal(); break;
+    case 'confirm-no': if(confirmResolver) confirmResolver(false); closeModal(); break;
+    case 'add-outro-custo': await addOutroCusto(); break;
+    case 'remover-outro-custo': await confirmRemoverOutroCusto(id); break;
+    case 'exportar-criptografado': await exportarBackup(true); break;
+    case 'exportar-descriptografado': await confirmExportarDescriptografado(); break;
+    case 'importar-backup': document.getElementById('import-file').click(); break;
+    case 'trocar-senha-toggle': toggleTrocarSenhaForm(); break;
+  }
+}
+
+async function handleSubmit(e){
+  e.preventDefault();
+  const id = e.target.id;
+  if(id === 'form-setup') await submitSetup(e.target);
+  else if(id === 'form-login') await submitLogin(e.target);
+  else if(id === 'form-cliente') await submitClienteForm(e.target);
+  else if(id === 'form-prompt-cliente') await submitPromptForm(e.target);
+  else if(id === 'form-prospect') await submitProspectForm(e.target);
+  else if(id === 'form-config') await submitConfigForm(e.target);
+  else if(id === 'form-trocar-senha') await submitTrocarSenha(e.target);
+}
+
+function handleChange(e){
+  if(e.target.id === 'mes-financeiro-input'){ mesFinanceiro = e.target.value; render(); }
+  else if(e.target.id === 'filtro-tipo'){ filtrosProspects.tipo = e.target.value; render(); }
+  else if(e.target.id === 'filtro-status-funil'){ filtrosProspects.statusFunil = e.target.value; render(); }
+  else if(e.target.id === 'import-file'){ handleImportFile(e.target.files[0]); }
+  else if(e.target.classList && e.target.classList.contains('obs-input')){ atualizarObservacaoMensagem(e.target.dataset.prospectId, e.target.dataset.msgId, e.target.value); }
+}
+
+function handleInput(e){
+  if(e.target.id === 'busca-prospects'){ filtrosProspects.busca = e.target.value; render(); }
+  else if(e.target.id === 'whatsapp'){ e.target.value = maskWhatsapp(e.target.value); }
+  else if(e.target.classList && e.target.classList.contains('input-data-br')){ e.target.value = maskDataBR(e.target.value); }
+}
+
+/* ---------- init ---------- */
+
+function init(){
+  document.addEventListener('click', handleClick);
+  document.addEventListener('submit', handleSubmit);
+  document.addEventListener('change', handleChange);
+  document.addEventListener('input', handleInput);
+  render();
+}
+
+document.addEventListener('DOMContentLoaded', init);
+})();
+</script>
+</body>
+</html>

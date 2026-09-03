@@ -81,3 +81,15 @@ export async function deleteProspect(id) {
   console.log(`📡 Calling API: DELETE /api/prospect/${id}`);
   return fetchAPI(`/prospect/${id}`, { method: 'DELETE' });
 }
+
+/**
+ * Send a message for real (WhatsApp or e-mail) direct from the dashboard
+ * POST /api/prospect/:id/send
+ */
+export async function sendMessageNow(id, mensagem, channel) {
+  console.log(`📡 Calling API: POST /api/prospect/${id}/send`);
+  return fetchAPI(`/prospect/${id}/send`, {
+    method: 'POST',
+    body: JSON.stringify({ mensagem, channel })
+  });
+}

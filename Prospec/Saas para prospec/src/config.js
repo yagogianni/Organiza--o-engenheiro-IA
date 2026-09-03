@@ -9,3 +9,15 @@ export const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 export const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
 export const SUPABASE_URL = process.env.SUPABASE_URL || 'https://pryvtmpjkckjrobyazdw.supabase.co';
 export const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+// Evolution API (WhatsApp) - mesma instância usada pelo n8n
+export const EVOLUTION_API_URL = process.env.EVOLUTION_API_URL;
+export const EVOLUTION_API_KEY = process.env.EVOLUTION_API_KEY;
+export const EVOLUTION_INSTANCE = process.env.EVOLUTION_INSTANCE;
+
+// Brevo SMTP (e-mail) - mesma conta usada pelo n8n
+export const SMTP_HOST = process.env.SMTP_HOST;
+export const SMTP_PORT = Number(process.env.SMTP_PORT) || 587;
+export const SMTP_LOGIN = process.env.SMTP_LOGIN;
+export const SMTP_KEY = process.env.SMTP_KEY;
+export const SMTP_FROM = process.env.SMTP_FROM || 'Fluxo Digital SC <fluxodigitalsc@gmail.com>';
