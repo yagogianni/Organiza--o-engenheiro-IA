@@ -339,3 +339,67 @@ export async function addToHistory(id, resposta, analise) {
     .insert({ lead_id: id, event_type: 'ANALYSIS_GENERATED', payload: analise });
   if (analysisEventError) throw new Error(analysisEventError.message);
 }
+
+/**
+ * Lê a configuração da prospecção automática (nichos ativos + região) e um
+ * resumo de hoje (nicho da vez + quantos leads sourced entraram hoje).
+ * Se a configuração nunca foi salva, retorna nichos/região vazios - quem
+ * chama decide o que fazer (o dashboard mostra a lista vazia pro usuário
+ * preencher pela primeira vez).
+ */
+export async function getSourcingConfig() {
+  const client = getClient();
+
+  const { data: settings, error: settingsError } = await client
+    .from('sourcing_settings')
+    .select('active_niches, target_region, last_niche_index')
+    .eq('id', 'default')
+    .maybeSingle();
+  if (settingsError) throw new Error(settingsError.message);
+
+  const niches = settings?.active_niches || [];
+  const region = settings?.target_region || '';
+  const lastNicheIndex = settings?.last_niche_index ?? -1;
+  const nicheToday = lastNicheIndex >= 0 && niches[lastNicheIndex] ? niches[lastNicheIndex] : null;
+
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const { count, error: countError } = await client
+    .from('leads')
+    .select('id', { count: 'exact', head: true })
+    .eq('source', 'google_maps')
+    .gte('created_at', startOfToday.toISOString());
+  if (countError) throw new Error(countError.message);
+
+  return {
+    niches,
+    region,
+    nicheToday,
+    leadsToday: count || 0,
+    dailyCap: 10
+  };
+}
+
+/**
+ * Salva a configuração da prospecção automática (nichos ativos + região).
+ * Não toca em last_niche_index de propósito - esse campo é controlado só
+ * pelo fluxo de busca do n8n, pra saber qual nicho buscar no próximo dia.
+ */
+export async function saveSourcingConfig({ niches, region }) {
+  if (!Array.isArray(niches) || niches.length === 0 || niches.some(n => typeof n !== 'string' || !n.trim())) {
+    throw new Error('Nichos deve ser uma lista de textos não vazios');
+  }
+  if (typeof region !== 'string' || !region.trim()) {
+    throw new Error('Região é obrigatória');
+  }
+
+  const client = getClient();
+  const { data, error } = await client
+    .from('sourcing_settings')
+    .upsert({ id: 'default', active_niches: niches, target_region: region.trim(), updated_at: new Date().toISOString() })
+    .select('active_niches, target_region')
+    .single();
+  if (error) throw new Error(error.message);
+
+  return { niches: data.active_niches, region: data.target_region };
+}

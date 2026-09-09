@@ -10,16 +10,20 @@ import {
   getProspect,
   saveProspect,
   addToHistory,
-  deleteProspect
+  deleteProspect,
+  getSourcingConfig,
+  saveSourcingConfig
 } from '../src/services/storage.js';
 
 const createdLeadIds = [];
 
 async function cleanup() {
-  if (createdLeadIds.length === 0) return;
   const { createClient } = await import('@supabase/supabase-js');
   const client = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-  await client.from('leads').delete().in('id', createdLeadIds);
+  if (createdLeadIds.length > 0) {
+    await client.from('leads').delete().in('id', createdLeadIds);
+  }
+  await client.from('sourcing_settings').delete().eq('id', 'default');
 }
 
 after(cleanup);
@@ -178,4 +182,42 @@ test('getAllProspects and getAllProspectsWithPipeline include a saved prospect',
   assert.ok(entry);
   assert.equal(entry.historico.length, 1);
   assert.equal(entry.analises.length, 1);
+});
+
+test('getSourcingConfig returns empty niches/region when nothing was saved yet', async () => {
+  const { createClient } = await import('@supabase/supabase-js');
+  const client = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+  await client.from('sourcing_settings').delete().eq('id', 'default');
+
+  const config = await getSourcingConfig();
+
+  assert.deepEqual(config.niches, []);
+  assert.equal(config.region, '');
+  assert.equal(config.nicheToday, null);
+  assert.equal(config.leadsToday, 0);
+  assert.equal(config.dailyCap, 10);
+});
+
+test('saveSourcingConfig rejects an empty niche list', async () => {
+  await assert.rejects(
+    () => saveSourcingConfig({ niches: [], region: 'Blumenau, SC' }),
+    /Nichos deve ser uma lista de textos não vazios/
+  );
+});
+
+test('saveSourcingConfig rejects a blank region', async () => {
+  await assert.rejects(
+    () => saveSourcingConfig({ niches: ['dentista'], region: '  ' }),
+    /Região é obrigatória/
+  );
+});
+
+test('saveSourcingConfig saves niches/region, and getSourcingConfig reads them back', async () => {
+  const saved = await saveSourcingConfig({ niches: ['dentista', 'fisioterapia'], region: 'Blumenau, SC, Brasil' });
+  assert.deepEqual(saved.niches, ['dentista', 'fisioterapia']);
+  assert.equal(saved.region, 'Blumenau, SC, Brasil');
+
+  const config = await getSourcingConfig();
+  assert.deepEqual(config.niches, ['dentista', 'fisioterapia']);
+  assert.equal(config.region, 'Blumenau, SC, Brasil');
 });
