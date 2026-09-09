@@ -18,11 +18,12 @@ before(async () => {
 
 after(async () => {
   await new Promise(resolve => server.close(resolve));
+  const { createClient } = await import('@supabase/supabase-js');
+  const client = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
   if (createdLeadIds.length > 0) {
-    const { createClient } = await import('@supabase/supabase-js');
-    const client = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
     await client.from('leads').delete().in('id', createdLeadIds);
   }
+  await client.from('sourcing_settings').delete().eq('id', 'default');
 });
 
 test('POST /analyze returns 400 when required fields are missing', async () => {
@@ -95,4 +96,37 @@ test('GET /prospect/:id includes a computed pipeline stage', async () => {
   const body = await res.json();
 
   assert.equal(body.pipeline.stage, 'abordado');
+});
+
+test('GET /sourcing-config returns niches/region/status shape', async () => {
+  const res = await fetch(`${baseUrl}/sourcing-config`);
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.ok(Array.isArray(body.niches));
+  assert.equal(typeof body.region, 'string');
+  assert.equal(typeof body.leadsToday, 'number');
+  assert.equal(body.dailyCap, 10);
+});
+
+test('PUT /sourcing-config saves and returns the new niches/region', async () => {
+  const res = await fetch(`${baseUrl}/sourcing-config`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ niches: ['dentista', 'clínica'], region: 'Joinville, SC' })
+  });
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.deepEqual(body.niches, ['dentista', 'clínica']);
+  assert.equal(body.region, 'Joinville, SC');
+});
+
+test('PUT /sourcing-config returns 400 for an empty niche list', async () => {
+  const res = await fetch(`${baseUrl}/sourcing-config`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ niches: [], region: 'Joinville, SC' })
+  });
+  assert.equal(res.status, 400);
+  const body = await res.json();
+  assert.match(body.error, /Nichos deve ser uma lista de textos não vazios/);
 });

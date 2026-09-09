@@ -9,7 +9,9 @@ import {
   getAllProspectsWithPipeline,
   addToHistory,
   deleteProspect,
-  recordSentMessage
+  recordSentMessage,
+  getSourcingConfig,
+  saveSourcingConfig
 } from '../services/storage.js';
 import { sendWhatsAppMessage } from '../services/sender.js';
 import { validateNewProspect, validateContinueInput } from '../utils/validators.js';
@@ -132,6 +134,33 @@ router.delete('/prospect/:id', async (req, res) => {
       return res.status(404).json({ error: 'Prospect não encontrado' });
     }
     res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/sourcing-config
+ * Retorna a configuração da prospecção automática (nichos, região) e o
+ * resumo de hoje (nicho da vez, quantos leads entraram hoje)
+ */
+router.get('/sourcing-config', async (req, res) => {
+  try {
+    const config = await getSourcingConfig();
+    res.json(config);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * PUT /api/sourcing-config
+ * Salva os nichos ativos e a região da prospecção automática
+ */
+router.put('/sourcing-config', async (req, res) => {
+  try {
+    const saved = await saveSourcingConfig(req.body);
+    res.json(saved);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
   }
 });
 
