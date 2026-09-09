@@ -1,7 +1,7 @@
 // public/js/app.js - Main Application Logic
 // Status: FASE 1 - Implemented
 
-import { analyzeNewProspect, continueConversation, getProspects, getProspect, deleteProspect, sendMessageNow, getSourcingConfig, saveSourcingConfig } from './api.js';
+import { analyzeNewProspect, continueConversation, getProspects, getProspect, deleteProspect, sendMessageNow, getSourcingConfig, saveSourcingConfig, buscarLeadsAgora } from './api.js';
 import { getTheme, saveTheme } from './storage-local.js';
 
 console.log('🎯 PROSPEC.AI - App Loading...');
@@ -89,6 +89,11 @@ function initializeEventListeners() {
   const btnSaveSourcingConfig = document.getElementById('btnSaveSourcingConfig');
   if (btnSaveSourcingConfig) {
     btnSaveSourcingConfig.addEventListener('click', handleSaveSourcingConfig);
+  }
+
+  const btnBuscarAgora = document.getElementById('btnBuscarAgora');
+  if (btnBuscarAgora) {
+    btnBuscarAgora.addEventListener('click', handleBuscarAgora);
   }
 
   console.log('✅ Event listeners initialized');
@@ -737,6 +742,23 @@ async function handleSaveSourcingConfig() {
   } catch (error) {
     messageEl.textContent = `Erro: ${error.message}`;
     messageEl.style.display = 'block';
+  }
+}
+
+async function handleBuscarAgora() {
+  const btn = document.getElementById('btnBuscarAgora');
+  if (btn && btn.disabled) return;
+  if (btn) { btn.disabled = true; btn.textContent = 'Buscando...'; }
+  const messageEl = document.getElementById('sourcingSaveMessage');
+  try {
+    await buscarLeadsAgora();
+    messageEl.textContent = 'Busca disparada! Pode levar alguns minutos - os leads novos aparecem no painel "Todos os Leads".';
+    messageEl.style.display = 'block';
+  } catch (error) {
+    messageEl.textContent = `Erro: ${error.message}`;
+    messageEl.style.display = 'block';
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Buscar Agora'; }
   }
 }
 

@@ -114,3 +114,12 @@ export async function saveSourcingConfig(data) {
     body: JSON.stringify(data)
   });
 }
+
+/**
+ * Trigger an on-demand sourcing run (bypasses the daily schedule)
+ * POST /api/sourcing-config/buscar-agora
+ */
+export async function buscarLeadsAgora() {
+  console.log('📡 Calling API: POST /api/sourcing-config/buscar-agora');
+  return fetchAPI('/sourcing-config/buscar-agora', { method: 'POST' });
+}

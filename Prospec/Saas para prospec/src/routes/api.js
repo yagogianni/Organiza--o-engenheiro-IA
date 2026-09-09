@@ -15,6 +15,7 @@ import {
 } from '../services/storage.js';
 import { sendWhatsAppMessage } from '../services/sender.js';
 import { validateNewProspect, validateContinueInput } from '../utils/validators.js';
+import { N8N_API_URL } from '../config.js';
 
 const router = express.Router();
 
@@ -161,6 +162,27 @@ router.put('/sourcing-config', async (req, res) => {
     res.json(saved);
   } catch (error) {
     res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/sourcing-config/buscar-agora
+ * Dispara o band de sourcing automático do n8n sob demanda, via o webhook
+ * dedicado pra isso - reaproveita exatamente a mesma lógica do ciclo
+ * diário, só que na hora em vez de esperar o schedule trigger.
+ */
+router.post('/sourcing-config/buscar-agora', async (req, res) => {
+  try {
+    if (!N8N_API_URL) {
+      return res.status(500).json({ error: 'N8N_API_URL não configurada' });
+    }
+    const response = await fetch(`${N8N_API_URL}/webhook/sourcing-buscar-agora`, { method: 'POST' });
+    if (!response.ok) {
+      throw new Error(`n8n retornou ${response.status}`);
+    }
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 

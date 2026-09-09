@@ -14,3 +14,6 @@ export const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 export const EVOLUTION_API_URL = process.env.EVOLUTION_API_URL;
 export const EVOLUTION_API_KEY = process.env.EVOLUTION_API_KEY;
 export const EVOLUTION_INSTANCE = process.env.EVOLUTION_INSTANCE;
+
+// n8n (usado pra disparar o webhook de "buscar agora" do sourcing automático)
+export const N8N_API_URL = process.env.N8N_API_URL;
