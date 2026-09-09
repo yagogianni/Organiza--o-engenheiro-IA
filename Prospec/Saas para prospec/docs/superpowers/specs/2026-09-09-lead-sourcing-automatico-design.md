@@ -1,7 +1,9 @@
 # Sourcing Automático de Leads — Spec
 
 **Data:** 2026-09-09
-**Status:** Aprovado pelo usuário, pronto para plano de implementação.
+**Status:** Aprovado pelo usuário, backend/dashboard já implementados
+(ver `docs/superpowers/plans/2026-09-09-lead-sourcing-automatico.md`). O
+fluxo de busca em si (n8n) ainda não foi construído.
 
 ## Contexto
 
@@ -18,40 +20,47 @@ Essa ideia já tinha sido levantada numa sessão anterior e adiada
 explicitamente como "um projeto totalmente separado". Esta spec é esse
 projeto.
 
-## Decisão de fonte de dados
+## Decisão de fonte de dados (histórico da idas e vindas, importante pra não repetir o mesmo caminho)
 
-Foram avaliadas duas fontes antes de fechar:
+Três rodadas de decisão antes de fechar:
 
-- **OpenStreetMap (Overpass API)**: testado em tempo real contra "dentista
-  em Blumenau, SC" — achou 91 dentistas cadastrados (cobertura boa), mas só
-  9 tinham telefone no formato de celular (o resto é fixo comercial), e
-  desses, 8 qualificariam pelos filtros de qualidade. Ou seja, funciona,
-  mas fica perto do teto de 10/dia com só 1 nicho ativo, e não tem sistema
-  de avaliações (perderia o critério "poucas avaliações" abaixo). É 100%
-  grátis, sem chave, sem cartão.
-- **Google Places API**: dado mais completo e consistente (telefone,
-  site, número de avaliações), mas exige cadastrar uma conta de cobrança no
-  Google Cloud pra ativar a API, mesmo pra ficar dentro do grátis.
+1. **Google Places API** (primeira escolha): dado mais completo
+   (telefone, site, número de avaliações), mas exige conta de cobrança no
+   Google Cloud.
+2. **OpenStreetMap (Overpass API)** (primeira troca, pedido do usuário: "não
+   quero ter gasto"): testado em tempo real contra "dentista em Blumenau,
+   SC" — achou 91 dentistas cadastrados (cobertura boa), mas só 9 tinham
+   telefone no formato de celular, e desses, 8 qualificariam pelos filtros
+   de qualidade. Funciona, mas fica perto do teto de 10/dia com só 1 nicho
+   ativo, e não tem sistema de avaliações.
+3. **Google Places de novo** (segunda troca, usuário decidiu que a
+   qualidade do dado valia o cadastro de cartão, contanto que travássemos
+   uma cota pra zero gasto) → **abandonado de novo, definitivamente**, ao
+   tentar configurar o faturamento: o Google Cloud pediu um **pré-pagamento
+   único de R$150** antes de liberar a conta de cobrança pra essa região/
+   tipo de conta (é reembolsável se a conta de Cloud Billing for encerrada,
+   mas ainda é dinheiro parado, incompatível com "zero gasto"). A trava de
+   cota resolveria o problema de uso contínuo, mas não evita essa exigência
+   de depósito inicial - são coisas diferentes.
 
-O usuário decidiu ir de **Google Places API**, priorizando a qualidade do
-dado — mas com uma exigência clara: **zero risco de gasto**. Isso é
-resolvido travando uma **cota** no Google Cloud (não é só um alerta, é um
-limite técnico que rejeita qualquer chamada acima do definido) — ver
-"Configuração necessária" abaixo. Ainda precisa cadastrar um cartão pra
-ativar a API (exigência do próprio Google, inevitável), mas a cota garante
-que ele nunca será cobrado.
+**Decisão final: OpenStreetMap.** Zero cartão, zero pré-pagamento, zero
+risco de cobrança, pra sempre. Se num futuro a qualidade do dado se tornar
+um problema real (poucos leads bons por muitos dias seguidos), a alternativa
+Google Places fica documentada acima como opção a reconsiderar - mas dessa
+vez sabendo do requisito de depósito inicial antes de propor de novo.
 
 ## Objetivo
 
 Um novo band no workflow "Prospec" do n8n que roda 1x por dia, busca
-candidatos no Google Places API dentro dos nichos/região configurados pelo
+candidatos no OpenStreetMap dentro dos nichos/região configurados pelo
 usuário, aplica os filtros de elegibilidade e qualidade, e cadastra os
 aprovados em `leads` com os mesmos valores (`status: 'READY_FOR_OUTREACH'`,
 `automation_enabled: true`) que um lead manual recebe — a partir daí ele
 entra no pipeline de outreach que já existe, sem nenhuma mudança lá.
 
-Uma tela nova no dashboard deixa o usuário configurar nichos e região, e ver
-um resumo simples do que rodou hoje, sem precisar abrir o n8n.
+A configuração (nichos ativos, região) e o resumo do dia já têm uma tela no
+dashboard, implementada e testada — ver "Estado atual da implementação"
+abaixo.
 
 ## Fora de escopo
 
@@ -63,140 +72,124 @@ um resumo simples do que rodou hoje, sem precisar abrir o n8n.
 - Um "score" numérico de prioridade entre os leads sourced — a lista de
   filtros abaixo é um corte binário (qualifica ou não), não um ranking.
 - Um relatório detalhado de "por que cada candidato foi descartado" —
-  o painel de status mostra só nicho do dia + quantos entraram hoje (ver
-  "Tela do dashboard"). Detalhamento de motivos de descarte é uma melhoria
-  futura, não necessária pra v1.
+  o painel de status mostra só nicho do dia + quantos entraram hoje.
+  Detalhamento de motivos de descarte é uma melhoria futura, não necessária
+  pra v1.
+- Nível de detalhe de avaliações/nota (rating) como critério de qualidade —
+  o OpenStreetMap não tem sistema de avaliações.
 
-## Modelo de dados
+## Limitações conhecidas do OpenStreetMap (o usuário já topou isso)
 
-Duas mudanças em Supabase:
+- **Cobertura menor**: o OSM depende de voluntários mapeando cada lugar.
+  Cidades grandes costumam estar bem mapeadas; cidades pequenas/bairros
+  específicos podem ter poucas empresas cadastradas num nicho, mesmo que
+  existam várias na vida real.
+- **Telefone nem sempre presente**: muitas entradas no OSM não têm o campo
+  de telefone preenchido, mesmo quando a empresa existe e está bem
+  localizada no mapa. Esses casos são tratados igual "sem celular" — pulados.
+- **Sem sistema de avaliações**: o filtro de qualidade fica só em "tem site
+  próprio ou não".
+- **Nichos não são texto livre por baixo dos panos**: o OSM organiza
+  negócios por tags estruturadas (ex.: `amenity=dentist`,
+  `healthcare=physiotherapist`), não por busca de texto livre. Isso é
+  resolvido com uma tabela de mapeamento (nicho em português → tag do OSM),
+  coberta na seção "Fluxo de busca diária". Nichos fora dessa tabela caem
+  num modo de busca por nome menos preciso.
+- Combinado, é mais provável não bater 10 leads em algum dia do que seria
+  com o Google Maps — já esperado, a trava de teto nunca força incluir lead
+  fraco só pra completar o número.
 
-- **Tabela nova `sourcing_settings`** (uma linha só, é configuração global do
-  usuário, não por-lead):
-  - `id` (fixo, ex.: `'default'`)
-  - `active_niches` (jsonb, array de strings — ex.: `["clínica", "dentista", "fisioterapia"]`)
-  - `target_region` (text — ex.: `"Blumenau, SC, Brasil"`, usado como sufixo
-    da busca no Places API)
-  - `last_niche_index` (int, default 0) — qual posição do array foi buscada
-    por último, pra alternar entre os nichos ativos em vez de repetir sempre
-    o primeiro
-  - `updated_at`
-- **Coluna nova em `leads`: `external_place_id`** (text, nullable, unique) —
-  o `place_id` que o Google dá pra cada lugar no Maps. É a chave de
-  deduplicação: nunca cadastra o mesmo `place_id` duas vezes, independente de
-  pequenas diferenças em nome/endereço que o Maps às vezes retorna.
+## Estado atual da implementação
 
-Leads sourced usam os campos existentes normalmente: `company_name` (nome do
-lugar), `niche` (o nicho buscado), `phone` (telefone normalizado, mesma
-regra de sempre), `website` (o campo `website` que o Places retorna — pode
-ser um site de verdade ou um link de Instagram/Facebook, guardado do mesmo
-jeito), `source: 'google_maps'`, `status: 'READY_FOR_OUTREACH'`,
-`automation_enabled: true`. Quando o `website` for um link de rede social,
-ou quando o motivo de qualificação for "poucas avaliações", isso é
-registrado em `notes` (coluna que já existe) pra o usuário ter contexto de
-cara ao abrir o lead — ex.: `"Fonte: Google Maps. Rede social:
-instagram.com/... | Avaliações no Google: 8 (nota 4.2)."`.
+Já implementado, testado e commitado (ver
+`docs/superpowers/plans/2026-09-09-lead-sourcing-automatico.md`):
 
-Como o telefone já tem uma constraint de unicidade (`leads_phone_unique`),
-uma segunda camada de proteção contra duplicado "de graça": se por algum
-motivo dois `place_id` diferentes tiverem o mesmo telefone, o insert falha
-com conflito (409) e isso é tratado como "já existe, pula" — não como erro.
+- Tabela `sourcing_settings` (`id`, `active_niches` jsonb, `target_region`,
+  `last_niche_index`, `updated_at`) e coluna `leads.external_place_id`
+  (text, unique, nullable) — a chave de deduplicação pro elemento do OSM.
+- `getSourcingConfig()`/`saveSourcingConfig()` em `src/services/storage.js`
+  — leem/gravam nichos e região, e calculam o resumo do dia contando
+  `leads` com `source = 'openstreetmap'` criados desde a meia-noite local.
+- `GET`/`PUT /api/sourcing-config` em `src/routes/api.js`.
+- Aba "Prospecção Automática" no dashboard (`public/index.html`,
+  `public/js/app.js`, `public/js/api.js`, `public/css/style.css`) — lista de
+  nichos com adicionar/remover, campo de região, painel de status, botão
+  salvar.
 
-## Configuração necessária (passo do usuário — importante seguir na ordem)
+**Ainda não implementado** (o que falta pra isso rodar de verdade): o band
+de busca diária em si no workflow "Prospec" do n8n, descrito na seção
+abaixo. Vai ser construído direto na API do n8n (mesmo padrão do Follow-up
+de Atenção), não via plano/TDD, já que não tem suíte de teste local pra um
+grafo de n8n.
 
-1. Criar um projeto no Google Cloud (ou usar um existente) e ativar a
-   **Places API (New)**.
-2. Gerar uma chave de API restrita a essa API (evita uso indevido se a chave
-   vazar).
-3. Vincular uma conta de cobrança ao projeto — o Google exige isso mesmo pra
-   ficar dentro do grátis. Sem isso a API nem ativa.
-4. **Travar uma cota** (não é opcional, é o que garante zero gasto): em
-   "APIs e Serviços" → "APIs Ativadas" → clicar na Places API → aba "Cotas e
-   Limites do Sistema" → editar a cota de requisições por dia pra um número
-   baixo, ex.: **100/dia**. Isso é bem acima do que o fluxo realmente usa
-   (~20/dia) mas bem abaixo do que geraria qualquer cobrança — e é uma
-   trava técnica: passar disso simplesmente rejeita a chamada com erro, não
-   cobra nada. Editar cota pra baixo é auto-serviço, não precisa de
-   aprovação do Google.
-5. Como segunda rede de segurança (redundante com a cota, mas não custa
-   nada ter): configurar um alerta de orçamento baixo (ex.: R$1) que avisa
-   por e-mail se, por algum motivo, algo for cobrado.
-6. Guardar a chave como `GOOGLE_MAPS_API_KEY` no `.env` e no header/query do
-   node correspondente no n8n (mesmo padrão de todas as outras chaves do
-   projeto).
+## Configuração necessária (passo do usuário)
 
-Custo esperado com a cota travada: **zero, garantido tecnicamente** — não é
-uma promessa de "deve ficar dentro do grátis", é uma trava que impede
-qualquer chamada acima do limite definido.
+Nenhuma. Sem conta, sem chave de API, sem cartão, sem billing, sem depósito.
+A Overpass API é um serviço público gratuito; o único cuidado técnico (não
+do usuário) é respeitar a política de uso justo dela — no máximo uma
+requisição por segundo e um identificador (`User-Agent`) descritivo em cada
+chamada, o que o volume desse fluxo (poucas chamadas por dia) cumpre com
+folga.
 
-## Fluxo de busca diária (novo band no workflow "Prospec")
+## Fluxo de busca diária (novo band no workflow "Prospec" - a construir)
 
 Mesmo padrão dos outros bands: schedule trigger 1x/dia, nodes nativos de
 n8n, sem Code node, erro de qualquer node cai automaticamente no
 "Prospec - Tratamento de Erros" já existente (com a trava de no máximo 5
 avisos por 2h já implementada).
 
-1. **Trava de teto diário**: conta quantos leads `source='google_maps'`
+1. **Trava de teto diário**: conta quantos leads `source='openstreetmap'`
    foram criados desde o início do dia (hora local). Se já bateu 10, o fluxo
-   para aqui — nem gasta chamada de API.
-2. **Escolhe o nicho do dia**: lê `sourcing_settings`, pega o nicho na
-   posição `last_niche_index % tamanho da lista`, e já incrementa esse
-   índice pro próximo dia (alternância round-robin entre os nichos ativos).
-3. **Busca no Google Places** (Text Search): `"<nicho> em <target_region>"`.
-   Retorna até 20 candidatos por página, com `place_id`, nome, endereço e se
-   tem site.
-4. **Pra cada candidato**, na ordem, até fechar o teto do dia:
-   - **Já existe?** `place_id` já em algum lead → pula, não conta.
-   - **Busca detalhe do lugar** (Place Details): telefone completo,
-     `website`, `rating`, `user_ratings_total`.
-   - **Tem celular?** Telefone tem formato de celular brasileiro (DDD + 9
-     dígitos, mesma regra de sempre) → senão, pula, não conta.
-   - **É candidato bom?** Qualifica se **qualquer um** for verdade:
-     sem `website`, OU `website` é só um link de instagram.com/
-     facebook.com, OU `user_ratings_total` < 15. Senão, pula (não é
-     prioridade agora).
-   - Passou tudo → cadastra o lead (campos acima) e registra o evento
-     `LEAD_CREATED` (mesmo padrão do cadastro manual).
-5. **Se a primeira página não deu candidatos suficientes** pra fechar o teto
-   do dia, busca a página seguinte do Places (até a 3ª — o Google limita a
-   3 páginas por busca), respeitando o pequeno intervalo que o Google exige
-   entre pedir uma página e a próxima.
-6. Se mesmo assim não fechar 10 no dia, tudo bem — não força incluir lead
-   fraco pra bater o número. Amanhã roda de novo, com o próximo nicho da
-   lista.
+   para aqui.
+2. **Escolhe o nicho do dia**: lê `sourcing_settings`, calcula
+   `(last_niche_index + 1) % tamanho da lista`, usa o nicho dessa posição, e
+   já grava esse índice de volta em `last_niche_index` (alternância
+   round-robin entre os nichos ativos - o `getSourcingConfig()` já
+   implementado assume que `last_niche_index` reflete o nicho *mais
+   recentemente* buscado, não o próximo).
+3. **Resolve a região**: consulta o Nominatim (serviço de geocodificação do
+   próprio OpenStreetMap, também gratuito e sem chave) pra transformar o
+   texto da região (ex.: "Blumenau, SC, Brasil") na área que a Overpass API
+   entende.
+4. **Traduz o nicho pra tag do OSM**: uma tabela pequena mantida no próprio
+   fluxo mapeia nichos comuns pra tags estruturadas — ex.: "dentista" →
+   `amenity=dentist`, "fisioterapia" → `healthcare=physiotherapist`,
+   "clínica" → `amenity=clinic`, "salão de beleza" → `shop=hairdresser`.
+   Nichos digitados pelo usuário que não estejam nessa tabela caem num modo
+   de busca pelo nome (procura o texto do nicho dentro do campo `name` dos
+   lugares da região) — funciona, mas traz resultado menos preciso. A
+   tabela pode crescer conforme o usuário for testando nichos novos.
+5. **Busca na Overpass API** dentro da área resolvida, pela tag (ou nome)
+   do nicho. Retorna os elementos com nome, tags de contato (`phone`,
+   `contact:phone`, `website`) e o identificador único do elemento.
+6. **Pra cada candidato**, na ordem, até fechar o teto do dia:
+   - **Já existe?** identificador já em algum lead (`external_place_id`) →
+     pula, não conta.
+   - **Tem celular?** Telefone (de qualquer uma das tags de contato) tem
+     formato de celular brasileiro (DDD + 9 dígitos, mesma regra de sempre)
+     → senão (sem telefone, ou só fixo), pula, não conta.
+   - **É candidato bom?** Qualifica se **qualquer um** for verdade: sem
+     `website`, OU `website` é só um link de instagram.com/facebook.com.
+     Senão, pula (não é prioridade agora).
+   - Passou tudo → cadastra o lead: `company_name`, `niche`, `phone`
+     normalizado, `website` (link social guardado do mesmo jeito),
+     `external_place_id`, `source: 'openstreetmap'`,
+     `status: 'READY_FOR_OUTREACH'`, `automation_enabled: true`, e `notes`
+     com o contexto (ex.: "Fonte: OpenStreetMap. Rede social encontrada:
+     instagram.com/..."). Registra o evento `LEAD_CREATED` (mesmo padrão do
+     cadastro manual).
+7. Se não fechar 10 no dia, tudo bem — não força incluir lead fraco pra
+   bater o número. Amanhã roda de novo, com o próximo nicho da lista.
 
-### Limitação conhecida
-
-Com o tempo, buscar sempre a mesma região pode esgotar candidatos novos de
-um nicho (o Maps já foi todo "varrido" ali). Isso não é resolvido agora — o
-usuário já tem controle pra adicionar nichos novos ou trocar a região pelo
-dashboard quando perceber que um nicho está rendendo pouco, sem precisar de
-mudança de código.
-
-## Tela do dashboard
-
-Uma seção nova ("Prospecção Automática") com:
-
-- Lista de nichos ativos, cada um com uma caixinha de marcar/desmarcar, mais
-  um campo de texto pra adicionar um nicho novo (livre, ex.: "salão de
-  beleza") e um botão de remover nos existentes.
-- Campo de texto pra região (ex.: "Blumenau, SC, Brasil").
-- Painel de status simples: nicho buscado hoje, quantos leads entraram hoje
-  (`N de 10`).
-- Botão "Salvar".
-
-Dois endpoints novos no backend (`src/routes/api.js`, seguindo o padrão
-já existente de rotas finas que delegam pro `storage.js`):
-`GET /api/sourcing-config` (lê `sourcing_settings` + o resumo de hoje) e
-`PUT /api/sourcing-config` (atualiza nichos/região).
+Como o telefone já tem uma constraint de unicidade (`leads_phone_unique`),
+uma segunda camada de proteção contra duplicado "de graça": se por algum
+motivo dois elementos diferentes tiverem o mesmo telefone, o insert falha
+com conflito (409) e isso é tratado como "já existe, pula" — não como erro.
 
 ## Testes
 
-Mesmo processo já estabelecido no projeto: antes de testar de ponta a ponta
-contra a API real do Google, desabilitar o schedule trigger do novo band;
-rodar uma vez manualmente com o nicho/região de teste; conferir no Supabase
-que os leads criados têm os campos certos (`source`, `external_place_id`,
-`notes` com o motivo de qualificação); apagar qualquer lead de teste ao
-final, confirmado por query direta. Suite `node --test` cobrindo os dois
-endpoints novos (`GET`/`PUT /api/sourcing-config`) e a validação de payload
-(nichos como array de strings não-vazias, região como string não-vazia).
+Backend/dashboard já cobertos (ver o plano de implementação). Pra o band do
+n8n, mesmo processo já estabelecido no projeto: desabilitar o schedule
+trigger antes de testar; rodar uma vez manualmente com o nicho/região de
+teste; conferir no Supabase que os leads criados têm os campos certos;
+apagar qualquer lead de teste ao final, confirmado por query direta.

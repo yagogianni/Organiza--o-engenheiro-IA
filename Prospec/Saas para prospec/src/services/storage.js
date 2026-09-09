@@ -367,7 +367,7 @@ export async function getSourcingConfig() {
   const { count, error: countError } = await client
     .from('leads')
     .select('id', { count: 'exact', head: true })
-    .eq('source', 'google_maps')
+    .eq('source', 'openstreetmap')
     .gte('created_at', startOfToday.toISOString());
   if (countError) throw new Error(countError.message);
 
