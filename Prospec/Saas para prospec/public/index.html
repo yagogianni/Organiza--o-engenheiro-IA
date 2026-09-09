@@ -41,6 +41,9 @@
       <button class="tab-btn" data-tab="painel">
         Todos os Leads
       </button>
+      <button class="tab-btn" data-tab="sourcing">
+        Prospecção Automática
+      </button>
     </nav>
 
     <!-- Main Content -->
@@ -297,6 +300,35 @@
           <div id="painelTable" class="painel-table">
             <p class="empty-message">Carregando...</p>
           </div>
+        </div>
+      </section>
+
+      <!-- TAB 4: Prospecção Automática -->
+      <section id="sourcing" class="tab-content">
+        <div class="panel">
+          <h2>Prospecção Automática</h2>
+          <p class="panel-subtitle">Todo dia, sozinho, busca até 10 empresas novas nos nichos abaixo e cadastra no pipeline.</p>
+
+          <div class="form-group">
+            <label>Nichos ativos</label>
+            <div id="sourcingNicheList" class="niche-list">
+              <p class="empty-message">Carregando...</p>
+            </div>
+            <div class="niche-add-row">
+              <input type="text" id="sourcingNewNiche" placeholder="Ex: salão de beleza">
+              <button type="button" class="btn btn-secondary" id="btnAddNiche">Adicionar</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="sourcingRegion">Região</label>
+            <input type="text" id="sourcingRegion" placeholder="Ex: Blumenau, SC, Brasil">
+          </div>
+
+          <div id="sourcingStatus" class="sourcing-status">Carregando...</div>
+
+          <button type="button" class="btn btn-primary" id="btnSaveSourcingConfig">Salvar</button>
+          <p id="sourcingSaveMessage" class="empty-message" style="display: none;"></p>
         </div>
       </section>
     </main>

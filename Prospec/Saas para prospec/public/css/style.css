@@ -701,3 +701,53 @@ body {
     font-size: 1.1rem;
   }
 }
+
+.niche-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.niche-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--primary-color-light);
+  color: var(--text-primary);
+  border-radius: 16px;
+  padding: 4px 10px 4px 14px;
+  font-size: 0.9rem;
+}
+
+.niche-chip button {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 4px;
+}
+
+.niche-chip button:hover {
+  color: var(--error-color);
+}
+
+.niche-add-row {
+  display: flex;
+  gap: 8px;
+}
+
+.niche-add-row input {
+  flex: 1;
+}
+
+.sourcing-status {
+  background: var(--secondary-bg);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 16px 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}

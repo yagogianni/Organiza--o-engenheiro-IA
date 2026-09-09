@@ -93,3 +93,24 @@ export async function sendMessageNow(id, mensagem, channel) {
     body: JSON.stringify({ mensagem, channel })
   });
 }
+
+/**
+ * Get the automatic lead-sourcing config (active niches, region, today's summary)
+ * GET /api/sourcing-config
+ */
+export async function getSourcingConfig() {
+  console.log('📡 Calling API: GET /api/sourcing-config');
+  return fetchAPI('/sourcing-config');
+}
+
+/**
+ * Save the automatic lead-sourcing config (active niches + region)
+ * PUT /api/sourcing-config
+ */
+export async function saveSourcingConfig(data) {
+  console.log('📡 Calling API: PUT /api/sourcing-config');
+  return fetchAPI('/sourcing-config', {
+    method: 'PUT',
+    body: JSON.stringify(data)
+  });
+}

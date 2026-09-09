@@ -1,12 +1,13 @@
 // public/js/app.js - Main Application Logic
 // Status: FASE 1 - Implemented
 
-import { analyzeNewProspect, continueConversation, getProspects, getProspect, deleteProspect, sendMessageNow } from './api.js';
+import { analyzeNewProspect, continueConversation, getProspects, getProspect, deleteProspect, sendMessageNow, getSourcingConfig, saveSourcingConfig } from './api.js';
 import { getTheme, saveTheme } from './storage-local.js';
 
 console.log('🎯 PROSPEC.AI - App Loading...');
 
 let currentProspects = [];
+let currentSourcingNiches = [];
 
 // Initialize theme
 initializeTheme();
@@ -79,6 +80,17 @@ function initializeEventListeners() {
     btnAnalyzarContinuar.addEventListener('click', handleContinueConversation);
   }
 
+  // Automatic sourcing config: add niche, save
+  const btnAddNiche = document.getElementById('btnAddNiche');
+  if (btnAddNiche) {
+    btnAddNiche.addEventListener('click', handleAddNiche);
+  }
+
+  const btnSaveSourcingConfig = document.getElementById('btnSaveSourcingConfig');
+  if (btnSaveSourcingConfig) {
+    btnSaveSourcingConfig.addEventListener('click', handleSaveSourcingConfig);
+  }
+
   console.log('✅ Event listeners initialized');
 }
 
@@ -115,6 +127,11 @@ function switchTab(tabName, clickedBtn) {
   // Load data if switching to the "all leads" panel
   if (tabName === 'painel') {
     loadPainel();
+  }
+
+  // Load data if switching to the automatic sourcing config panel
+  if (tabName === 'sourcing') {
+    loadSourcingConfig();
   }
 }
 
@@ -650,6 +667,77 @@ function updateThemeButton(theme) {
 function getSelectedProspectId() {
   const selected = document.querySelector('.prospect-item.active');
   return selected ? selected.dataset.id : null;
+}
+
+/**
+ * Load and render the "Prospecção Automática" tab: active niches, region,
+ * and today's summary (which niche was searched, how many leads came in).
+ */
+async function loadSourcingConfig() {
+  console.log('📡 Carregando configuração de prospecção automática...');
+  try {
+    const config = await getSourcingConfig();
+    currentSourcingNiches = config.niches;
+    renderNicheList();
+    document.getElementById('sourcingRegion').value = config.region;
+    const statusEl = document.getElementById('sourcingStatus');
+    const nicheLabel = config.nicheToday || 'nenhum ainda';
+    statusEl.textContent = `Nicho de hoje: ${nicheLabel} — leads adicionados hoje: ${config.leadsToday} de ${config.dailyCap}`;
+  } catch (error) {
+    console.error('❌ Erro ao carregar configuração de sourcing:', error);
+  }
+}
+
+function renderNicheList() {
+  const container = document.getElementById('sourcingNicheList');
+  if (currentSourcingNiches.length === 0) {
+    container.innerHTML = '<p class="empty-message">Nenhum nicho ativo ainda.</p>';
+    return;
+  }
+  container.innerHTML = '';
+  currentSourcingNiches.forEach(niche => {
+    const chip = document.createElement('span');
+    chip.className = 'niche-chip';
+    chip.textContent = niche;
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.textContent = '×';
+    removeBtn.title = `Remover ${niche}`;
+    removeBtn.addEventListener('click', () => handleRemoveNiche(niche));
+    chip.appendChild(removeBtn);
+    container.appendChild(chip);
+  });
+}
+
+function handleAddNiche() {
+  const input = document.getElementById('sourcingNewNiche');
+  const niche = input.value.trim();
+  if (!niche || currentSourcingNiches.includes(niche)) {
+    input.value = '';
+    return;
+  }
+  currentSourcingNiches.push(niche);
+  renderNicheList();
+  input.value = '';
+}
+
+function handleRemoveNiche(niche) {
+  currentSourcingNiches = currentSourcingNiches.filter(n => n !== niche);
+  renderNicheList();
+}
+
+async function handleSaveSourcingConfig() {
+  const region = document.getElementById('sourcingRegion').value.trim();
+  const messageEl = document.getElementById('sourcingSaveMessage');
+  try {
+    await saveSourcingConfig({ niches: currentSourcingNiches, region });
+    messageEl.textContent = 'Salvo!';
+    messageEl.style.display = 'block';
+    setTimeout(() => { messageEl.style.display = 'none'; }, 2000);
+  } catch (error) {
+    messageEl.textContent = `Erro: ${error.message}`;
+    messageEl.style.display = 'block';
+  }
 }
 
 // Initialize app when DOM is ready
