@@ -1,6 +1,16 @@
 # Canal de E-mail (Fase 11) — Spec
 
-**Status:** aguardando revisão do usuário
+**Status:** ABANDONADA em 2026-09-09. Descoberto que outra sessão já tinha
+construído e "enviado" esse canal via Brevo SMTP (não Gmail direto como
+essa spec propunha) em 2026-08-29, restrito a leads de nicho clínica — mas
+nunca rodou de verdade porque nenhum lead teve e-mail cadastrado até hoje.
+O usuário decidiu remover o canal de e-mail inteiramente ("vamos tirar o
+email pq ele não vai lidar tão bem em prospecção, muita burocracia
+também") em vez de terminar/testar. Todos os nós de n8n e código
+relacionados (Brevo SMTP, `sendEmailMessage`, `nodemailer`) foram
+removidos. Prospec.IA volta a ser WhatsApp-only. Esta spec fica só como
+registro histórico do raciocínio (Gmail vs Brevo, aquecimento, etc.), não
+representa mais o estado ou os planos do projeto.
 **Data:** 2026-09-03
 
 ## Contexto
