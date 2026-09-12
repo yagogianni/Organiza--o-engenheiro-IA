@@ -768,6 +768,12 @@ async function handleBuscarAgora() {
   if (btn) { btn.disabled = true; }
   const messageEl = document.getElementById('sourcingSaveMessage');
   try {
+    // Salva o que está na tela antes de buscar - senão "Buscar Agora" busca
+    // com a última configuração salva, ignorando silenciosamente qualquer
+    // nicho/região digitado e ainda não salvo.
+    const region = document.getElementById('sourcingRegion').value.trim();
+    await saveSourcingConfig({ niches: currentSourcingNiches, region });
+
     const before = await getSourcingConfig();
     await buscarLeadsAgora();
     messageEl.textContent = 'Busca disparada! Aguardando resultado...';
