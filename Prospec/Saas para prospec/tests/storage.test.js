@@ -1,4 +1,4 @@
-import { test, after } from 'node:test';
+import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import dotenv from 'dotenv';
 
@@ -16,6 +16,18 @@ import {
 } from '../src/services/storage.js';
 
 const createdLeadIds = [];
+let sourcingSettingsSnapshot;
+
+// A config de sourcing é uma linha só ('default'), compartilhada com o uso
+// real do dashboard - guarda o que já estava configurado antes dos testes
+// pra devolver depois, em vez de simplesmente apagar (isso já apagou a
+// configuração real do usuário mais de uma vez).
+before(async () => {
+  const { createClient } = await import('@supabase/supabase-js');
+  const client = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+  const { data } = await client.from('sourcing_settings').select('*').eq('id', 'default').maybeSingle();
+  sourcingSettingsSnapshot = data;
+});
 
 async function cleanup() {
   const { createClient } = await import('@supabase/supabase-js');
@@ -23,7 +35,11 @@ async function cleanup() {
   if (createdLeadIds.length > 0) {
     await client.from('leads').delete().in('id', createdLeadIds);
   }
-  await client.from('sourcing_settings').delete().eq('id', 'default');
+  if (sourcingSettingsSnapshot) {
+    await client.from('sourcing_settings').upsert(sourcingSettingsSnapshot);
+  } else {
+    await client.from('sourcing_settings').delete().eq('id', 'default');
+  }
 }
 
 after(cleanup);

@@ -6,6 +6,7 @@ import { saveProspect } from '../src/services/storage.js';
 
 let server, baseUrl;
 const createdLeadIds = [];
+let sourcingSettingsSnapshot;
 
 before(async () => {
   const app = express();
@@ -14,6 +15,14 @@ before(async () => {
   server = app.listen(0);
   await new Promise(resolve => server.once('listening', resolve));
   baseUrl = `http://localhost:${server.address().port}/api`;
+
+  // A config de sourcing é uma linha só ('default'), compartilhada com o uso
+  // real do dashboard - guarda o que já estava configurado antes dos testes
+  // pra devolver depois, em vez de simplesmente apagar.
+  const { createClient } = await import('@supabase/supabase-js');
+  const client = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+  const { data } = await client.from('sourcing_settings').select('*').eq('id', 'default').maybeSingle();
+  sourcingSettingsSnapshot = data;
 });
 
 after(async () => {
@@ -23,7 +32,11 @@ after(async () => {
   if (createdLeadIds.length > 0) {
     await client.from('leads').delete().in('id', createdLeadIds);
   }
-  await client.from('sourcing_settings').delete().eq('id', 'default');
+  if (sourcingSettingsSnapshot) {
+    await client.from('sourcing_settings').upsert(sourcingSettingsSnapshot);
+  } else {
+    await client.from('sourcing_settings').delete().eq('id', 'default');
+  }
 });
 
 test('POST /analyze returns 400 when required fields are missing', async () => {
