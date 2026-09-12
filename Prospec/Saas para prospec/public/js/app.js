@@ -735,10 +735,10 @@ async function handleSaveSourcingConfig() {
   const region = document.getElementById('sourcingRegion').value.trim();
   const messageEl = document.getElementById('sourcingSaveMessage');
   try {
-    await saveSourcingConfig({ niches: currentSourcingNiches, region });
-    messageEl.textContent = 'Salvo!';
+    const saved = await saveSourcingConfig({ niches: currentSourcingNiches, region });
+    messageEl.textContent = `Salvo! Região confirmada: ${saved.resolvedRegion}`;
     messageEl.style.display = 'block';
-    setTimeout(() => { messageEl.style.display = 'none'; }, 2000);
+    setTimeout(() => { messageEl.style.display = 'none'; }, 5000);
   } catch (error) {
     messageEl.textContent = `Erro: ${error.message}`;
     messageEl.style.display = 'block';

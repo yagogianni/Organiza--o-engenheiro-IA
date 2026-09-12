@@ -381,6 +381,33 @@ export async function getSourcingConfig() {
 }
 
 /**
+ * Confere se o texto de região vira mesmo uma cidade/região no OpenStreetMap
+ * (não um endereço específico, escritório, etc.) - usa o mesmo geocodificador
+ * (Nominatim) que o fluxo de busca do n8n usa de verdade, pra pegar o erro
+ * na hora de salvar em vez de a busca falhar calada dias depois. Lança erro
+ * descritivo (mostrando o que foi encontrado) se não parecer uma região de
+ * verdade; retorna o nome completo resolvido se parecer.
+ */
+async function resolveRegion(region) {
+  const res = await fetch(
+    `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(region)}&format=json&limit=1`,
+    { headers: { 'User-Agent': 'ProspecIA-Sourcing/1.0 (contato: yago.gianni@gmail.com)' } }
+  );
+  const results = await res.json();
+  const place = results[0];
+  if (!place) {
+    throw new Error(`Não encontrei nenhum lugar pra "${region}". Tente algo como "Itajaí, SC, Brasil".`);
+  }
+  if (place.class !== 'boundary' || place.type !== 'administrative') {
+    throw new Error(
+      `"${region}" não parece ser uma cidade/região - encontrei "${place.display_name}" (isso é um ${place.type}, não uma cidade). ` +
+      'Tente escrever só o nome da cidade/região, sem misturar o nicho no mesmo texto, tipo "Itajaí, SC, Brasil".'
+    );
+  }
+  return place.display_name;
+}
+
+/**
  * Salva a configuração da prospecção automática (nichos ativos + região).
  * Não toca em last_niche_index de propósito - esse campo é controlado só
  * pelo fluxo de busca do n8n, pra saber qual nicho buscar no próximo dia.
@@ -393,6 +420,8 @@ export async function saveSourcingConfig({ niches, region }) {
     throw new Error('Região é obrigatória');
   }
 
+  const resolvedRegion = await resolveRegion(region.trim());
+
   const client = getClient();
   const { data, error } = await client
     .from('sourcing_settings')
@@ -401,5 +430,5 @@ export async function saveSourcingConfig({ niches, region }) {
     .single();
   if (error) throw new Error(error.message);
 
-  return { niches: data.active_niches, region: data.target_region };
+  return { niches: data.active_niches, region: data.target_region, resolvedRegion };
 }

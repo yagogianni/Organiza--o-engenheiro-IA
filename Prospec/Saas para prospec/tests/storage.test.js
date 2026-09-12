@@ -216,8 +216,16 @@ test('saveSourcingConfig saves niches/region, and getSourcingConfig reads them b
   const saved = await saveSourcingConfig({ niches: ['dentista', 'fisioterapia'], region: 'Blumenau, SC, Brasil' });
   assert.deepEqual(saved.niches, ['dentista', 'fisioterapia']);
   assert.equal(saved.region, 'Blumenau, SC, Brasil');
+  assert.match(saved.resolvedRegion, /Blumenau/);
 
   const config = await getSourcingConfig();
   assert.deepEqual(config.niches, ['dentista', 'fisioterapia']);
   assert.equal(config.region, 'Blumenau, SC, Brasil');
+});
+
+test('saveSourcingConfig rejects a region that resolves to a specific place, not a city/region', async () => {
+  await assert.rejects(
+    () => saveSourcingConfig({ niches: ['fisioterapia'], region: 'fisioterapia itajaí.sc.br' }),
+    /não parece ser uma cidade\/região/
+  );
 });
