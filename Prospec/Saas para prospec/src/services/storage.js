@@ -352,7 +352,7 @@ export async function getSourcingConfig() {
 
   const { data: settings, error: settingsError } = await client
     .from('sourcing_settings')
-    .select('active_niches, target_region, last_niche_index')
+    .select('active_niches, target_region, last_niche_index, last_run_at, last_run_status, last_run_message')
     .eq('id', 'default')
     .maybeSingle();
   if (settingsError) throw new Error(settingsError.message);
@@ -376,7 +376,10 @@ export async function getSourcingConfig() {
     region,
     nicheToday,
     leadsToday: count || 0,
-    dailyCap: 10
+    dailyCap: 10,
+    lastRunAt: settings?.last_run_at || null,
+    lastRunStatus: settings?.last_run_status || null,
+    lastRunMessage: settings?.last_run_message || null
   };
 }
 

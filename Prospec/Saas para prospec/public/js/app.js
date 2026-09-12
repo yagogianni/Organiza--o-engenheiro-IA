@@ -678,6 +678,8 @@ function getSelectedProspectId() {
  * Load and render the "Prospecção Automática" tab: active niches, region,
  * and today's summary (which niche was searched, how many leads came in).
  */
+const RUN_STATUS_ICON = { sucesso: '✅', erro: '❌', nada_novo: 'ℹ️' };
+
 async function loadSourcingConfig() {
   console.log('📡 Carregando configuração de prospecção automática...');
   try {
@@ -688,8 +690,19 @@ async function loadSourcingConfig() {
     const statusEl = document.getElementById('sourcingStatus');
     const nicheLabel = config.nicheToday || 'nenhum ainda';
     statusEl.textContent = `Nicho de hoje: ${nicheLabel} — leads adicionados hoje: ${config.leadsToday} de ${config.dailyCap}`;
+
+    const lastRunEl = document.getElementById('sourcingLastRun');
+    if (config.lastRunAt) {
+      const icon = RUN_STATUS_ICON[config.lastRunStatus] || '';
+      const dataFormatada = new Date(config.lastRunAt).toLocaleString('pt-BR');
+      lastRunEl.textContent = `Última busca (${dataFormatada}): ${icon} ${config.lastRunMessage}`;
+    } else {
+      lastRunEl.textContent = 'Última busca: nenhuma ainda — clique em "Buscar Agora" pra testar.';
+    }
+    return config;
   } catch (error) {
     console.error('❌ Erro ao carregar configuração de sourcing:', error);
+    return null;
   }
 }
 
@@ -745,15 +758,35 @@ async function handleSaveSourcingConfig() {
   }
 }
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 async function handleBuscarAgora() {
   const btn = document.getElementById('btnBuscarAgora');
   if (btn && btn.disabled) return;
-  if (btn) { btn.disabled = true; btn.textContent = 'Buscando...'; }
+  if (btn) { btn.disabled = true; }
   const messageEl = document.getElementById('sourcingSaveMessage');
   try {
+    const before = await getSourcingConfig();
     await buscarLeadsAgora();
-    messageEl.textContent = 'Busca disparada! Pode levar alguns minutos - os leads novos aparecem no painel "Todos os Leads".';
+    messageEl.textContent = 'Busca disparada! Aguardando resultado...';
     messageEl.style.display = 'block';
+
+    // A busca roda em segundo plano no n8n (Overpass pode levar até uns 30s,
+    // com retry em caso de sobrecarga) - fica de olho até o resultado mudar,
+    // em vez de deixar o usuário sem saber o que aconteceu.
+    const maxTentativas = 20;
+    for (let tentativa = 0; tentativa < maxTentativas; tentativa++) {
+      if (btn) btn.textContent = `Buscando... (${tentativa + 1}/${maxTentativas})`;
+      await sleep(3000);
+      const depois = await loadSourcingConfig();
+      if (depois && depois.lastRunAt && depois.lastRunAt !== before.lastRunAt) {
+        messageEl.style.display = 'none';
+        return;
+      }
+    }
+    messageEl.textContent = 'Ainda não veio o resultado - a busca pode estar demorando mais que o normal. Recarregue a página em um minuto pra conferir.';
   } catch (error) {
     messageEl.textContent = `Erro: ${error.message}`;
     messageEl.style.display = 'block';
