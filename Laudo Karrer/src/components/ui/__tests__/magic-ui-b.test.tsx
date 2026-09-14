@@ -7,9 +7,9 @@ describe("GradientText", () => {
   it("renders its children with a gradient background-image", () => {
     render(<GradientText from="#1B3A6B" to="#2E5FA3">Karrer</GradientText>);
     const el = screen.getByText("Karrer");
-    // Browser converts hex to RGB: #1B3A6B = rgb(27, 58, 107), #2E5FA3 = rgb(46, 95, 163)
-    expect(el.style.backgroundImage).toContain("27");
-    expect(el.style.backgroundImage).toContain("linear-gradient");
+    // Browser converts hex to RGB via CSSOM: #1B3A6B = rgb(27, 58, 107), #2E5FA3 = rgb(46, 95, 163)
+    expect(el.style.backgroundImage).toContain("rgb(27, 58, 107)"); // from
+    expect(el.style.backgroundImage).toContain("rgb(46, 95, 163)"); // to
   });
 });
 
