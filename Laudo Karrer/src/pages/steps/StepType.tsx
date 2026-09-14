@@ -45,7 +45,7 @@ export function StepType({ laudo, onSelectType }: StepTypeProps) {
       </h2>
       <div className="grid gap-4 sm:grid-cols-3">
         {TYPE_OPTIONS.map(({ type, title, description, icon: Icon }) => (
-          <div key={type} className="relative overflow-hidden rounded-xl">
+          <div key={type} className="group relative overflow-hidden rounded-xl">
             <SpotlightCard
               onClick={() => onSelectType(type)}
               className={cn(laudo.type === type && "ring-2 ring-karrer-blue")}
