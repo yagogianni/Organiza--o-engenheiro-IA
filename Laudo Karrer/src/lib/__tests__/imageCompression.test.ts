@@ -16,7 +16,7 @@ describe("calculateTargetDimensions", () => {
 });
 
 describe("compressImageFile", () => {
-  const OriginalImage = global.Image;
+  const OriginalImage = globalThis.Image;
   const originalToDataURL = HTMLCanvasElement.prototype.toDataURL;
   const originalGetContext = HTMLCanvasElement.prototype.getContext;
 
@@ -31,7 +31,7 @@ describe("compressImageFile", () => {
       }
     }
     // @ts-expect-error test stub replaces the global Image constructor
-    global.Image = FakeImage;
+    globalThis.Image = FakeImage;
 
     HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
       drawImage: vi.fn(),
@@ -41,7 +41,7 @@ describe("compressImageFile", () => {
   });
 
   afterEach(() => {
-    global.Image = OriginalImage;
+    globalThis.Image = OriginalImage;
     HTMLCanvasElement.prototype.toDataURL = originalToDataURL;
     HTMLCanvasElement.prototype.getContext = originalGetContext;
   });
