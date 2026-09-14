@@ -102,3 +102,15 @@
 .animate-sparkle-pulse {
   animation: sparkle-pulse 1.6s ease-in-out infinite;
 }
+
+@keyframes shimmer-sweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+.dropzone-shimmer-bar {
+  transform: translateX(-100%);
+}
+.dropzone:hover .dropzone-shimmer-bar {
+  opacity: 1;
+  animation: shimmer-sweep 1.2s ease-in-out infinite;
+}
