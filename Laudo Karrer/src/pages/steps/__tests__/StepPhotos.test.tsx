@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { vi } from "vitest";
 import { StepPhotos } from "@/pages/steps/StepPhotos";
@@ -6,6 +7,28 @@ import type { PhotoItem } from "@/types/laudo";
 
 function makeFile(name: string) {
   return new File(["fake"], name, { type: "image/jpeg" });
+}
+
+/** Mimics real usage: a parent that actually applies onChange back into props. */
+function ControlledStepPhotos({
+  initialPhotos,
+  onChangeSpy,
+}: {
+  initialPhotos: PhotoItem[];
+  onChangeSpy: (photos: PhotoItem[]) => void;
+}) {
+  const [photos, setPhotos] = useState(initialPhotos);
+  return (
+    <StepPhotos
+      photos={photos}
+      onChange={(p) => {
+        setPhotos(p);
+        onChangeSpy(p);
+      }}
+      onNext={vi.fn()}
+      onBack={vi.fn()}
+    />
+  );
 }
 
 describe("StepPhotos", () => {
@@ -58,6 +81,34 @@ describe("StepPhotos", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /remover todas/i }));
     expect(onChange).toHaveBeenCalledWith([]);
+  });
+
+  it("does not revert a removal made while another photo is still compressing", async () => {
+    const onChangeSpy = vi.fn();
+    let resolveCompression!: (value: string) => void;
+    const pending = new Promise<string>((resolve) => {
+      resolveCompression = resolve;
+    });
+    vi.spyOn(imageCompression, "compressImageFile").mockReturnValue(pending);
+
+    render(<ControlledStepPhotos initialPhotos={existingPhotos} onChangeSpy={onChangeSpy} />);
+
+    const dropzone = screen.getByRole("button", { name: /arraste fotos/i });
+    fireEvent.drop(dropzone, { dataTransfer: { files: [makeFile("c.jpg")] } });
+
+    // While the drop's compression is still pending, remove photo 1 (p1).
+    fireEvent.click(screen.getByRole("button", { name: /remover foto 1/i }));
+    expect(onChangeSpy).toHaveBeenCalledWith([{ ...existingPhotos[1], order: 1 }]);
+
+    // Now let the pending compression resolve.
+    resolveCompression("data:image/jpeg;base64,NEW");
+    await waitFor(() => expect(onChangeSpy).toHaveBeenCalledTimes(2));
+
+    const finalPhotos = onChangeSpy.mock.calls[1][0] as PhotoItem[];
+    // p1 must stay removed — the drop's onChange must not resurrect it from a stale snapshot.
+    expect(finalPhotos.map((p) => p.id)).not.toContain("p1");
+    expect(finalPhotos.map((p) => p.id)).toContain("p2");
+    expect(finalPhotos.map((p) => p.order)).toEqual([1, 2]);
   });
 
   it("calls onNext and onBack", () => {

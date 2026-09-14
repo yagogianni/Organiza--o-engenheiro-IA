@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,13 +19,16 @@ function renumber(photos: PhotoItem[]): PhotoItem[] {
 }
 
 export function StepPhotos({ photos, onChange, onNext, onBack }: StepPhotosProps) {
+  const photosRef = useRef(photos);
+  photosRef.current = photos; // kept in sync every render, no effect needed
+
   async function handleFilesSelected(files: File[]) {
     const newPhotos: PhotoItem[] = [];
     for (const file of files) {
       const dataUrl = await compressImageFile(file);
       newPhotos.push({ id: crypto.randomUUID(), dataUrl, caption: "", order: 0 });
     }
-    onChange(renumber([...photos, ...newPhotos]));
+    onChange(renumber([...photosRef.current, ...newPhotos]));
   }
 
   function handleCaptionChange(id: string, caption: string) {
