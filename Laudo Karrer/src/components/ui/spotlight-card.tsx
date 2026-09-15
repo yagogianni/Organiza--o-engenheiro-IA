@@ -1,4 +1,4 @@
-import { useRef, type ReactNode, type MouseEvent } from "react";
+import { useRef, type ReactNode, type MouseEvent, type KeyboardEvent } from "react";
 import { cn } from "@/lib/utils";
 
 export interface SpotlightCardProps {
@@ -18,11 +18,19 @@ export function SpotlightCard({ children, className, onClick }: SpotlightCardPro
     el.style.setProperty("--y", `${e.clientY - rect.top}px`);
   }
 
+  function handleKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+    if (e.key === "Enter" || e.key === " ") {
+      if (e.key === " ") e.preventDefault();
+      onClick?.();
+    }
+  }
+
   return (
     <div
       ref={ref}
       onMouseMove={handleMouseMove}
       onClick={onClick}
+      onKeyDown={onClick ? handleKeyDown : undefined}
       role={onClick ? "button" : undefined}
       tabIndex={onClick ? 0 : undefined}
       className={cn(

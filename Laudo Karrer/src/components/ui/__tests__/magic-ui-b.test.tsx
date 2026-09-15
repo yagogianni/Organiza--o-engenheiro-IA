@@ -28,6 +28,31 @@ describe("SpotlightCard", () => {
     expect(card.style.getPropertyValue("--x")).toBe("50px");
     expect(card.style.getPropertyValue("--y")).toBe("30px");
   });
+
+  it("calls onClick when activated via the keyboard with Enter or Space", () => {
+    const onClick = vi.fn();
+    render(<SpotlightCard onClick={onClick}>Laudo de Vistoria Cautelar</SpotlightCard>);
+    const card = screen.getByRole("button", { name: /laudo de vistoria cautelar/i });
+
+    fireEvent.keyDown(card, { key: "Enter" });
+    expect(onClick).toHaveBeenCalledTimes(1);
+
+    fireEvent.keyDown(card, { key: " " });
+    expect(onClick).toHaveBeenCalledTimes(2);
+  });
+
+  it("ignores other keys and does nothing when there is no onClick", () => {
+    const onClick = vi.fn();
+    render(<SpotlightCard onClick={onClick}>Laudo de Vistoria Cautelar</SpotlightCard>);
+    const card = screen.getByRole("button", { name: /laudo de vistoria cautelar/i });
+
+    fireEvent.keyDown(card, { key: "Tab" });
+    expect(onClick).not.toHaveBeenCalled();
+
+    render(<SpotlightCard>Sem clique</SpotlightCard>);
+    // No role="button" is assigned without onClick, so there's nothing to press Enter on.
+    expect(screen.queryByRole("button", { name: /sem clique/i })).not.toBeInTheDocument();
+  });
 });
 
 describe("AnimatedCard", () => {
