@@ -6,11 +6,15 @@ export interface PageCursor {
   pageNumber: number;
 }
 
+export function drawChrome(doc: jsPDF, sectionTitle: string, pageNumber: number): void {
+  drawHeader(doc, sectionTitle, pageNumber);
+  drawFooter(doc);
+}
+
 export function newPage(doc: jsPDF, sectionTitle: string, cursor: PageCursor): void {
   doc.addPage();
   cursor.pageNumber += 1;
-  drawHeader(doc, sectionTitle, cursor.pageNumber);
-  drawFooter(doc);
+  drawChrome(doc, sectionTitle, cursor.pageNumber);
 }
 
 export function drawFieldList(
