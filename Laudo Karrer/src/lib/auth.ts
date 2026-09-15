@@ -11,6 +11,22 @@ export function hashPassword(password: string): string {
   return btoa(encodeURIComponent(password));
 }
 
+/**
+ * Whether the app has VITE_APP_USERNAME and VITE_APP_PASSWORD_HASH configured
+ * at all. A `false` here means login can never succeed regardless of what the
+ * user types — distinct from a simple wrong username/password.
+ */
+export function isAppConfigured(): boolean {
+  const expectedUsername = import.meta.env.VITE_APP_USERNAME;
+  const expectedHash = import.meta.env.VITE_APP_PASSWORD_HASH;
+  return (
+    typeof expectedUsername === "string" &&
+    expectedUsername.length > 0 &&
+    typeof expectedHash === "string" &&
+    expectedHash.length > 0
+  );
+}
+
 export function login(username: string, password: string): boolean {
   const expectedUsername = import.meta.env.VITE_APP_USERNAME;
   const expectedHash = import.meta.env.VITE_APP_PASSWORD_HASH;

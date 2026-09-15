@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { login } from "@/lib/auth";
+import { login, isAppConfigured } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 export default function LoginPage() {
@@ -74,7 +74,11 @@ export default function LoginPage() {
         </div>
 
         {error && (
-          <p className="mb-2 text-sm text-red-600">Usuário ou senha inválidos.</p>
+          <p className="mb-2 text-sm text-red-600">
+            {isAppConfigured()
+              ? "Usuário ou senha inválidos."
+              : "Aplicativo não configurado — defina VITE_APP_USERNAME e VITE_APP_PASSWORD_HASH."}
+          </p>
         )}
 
         <Button type="submit" className="mt-4 w-full bg-karrer-blue hover:bg-karrer-lightblue">

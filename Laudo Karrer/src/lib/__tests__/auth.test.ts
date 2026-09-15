@@ -1,5 +1,5 @@
 import { beforeEach, afterEach, vi } from "vitest";
-import { hashPassword, login, logout, isAuthenticated, getSession } from "@/lib/auth";
+import { hashPassword, login, logout, isAuthenticated, getSession, isAppConfigured } from "@/lib/auth";
 
 const SESSION_KEY = "karrer_session";
 
@@ -54,5 +54,24 @@ describe("auth", () => {
     expect(isAuthenticated()).toBe(false);
     expect(getSession()).toBeNull();
     expect(localStorage.getItem(SESSION_KEY)).toBeNull();
+  });
+
+  it("isAppConfigured is true when both env vars are set (as stubbed in beforeEach)", () => {
+    expect(isAppConfigured()).toBe(true);
+  });
+
+  it("isAppConfigured is false when VITE_APP_USERNAME or VITE_APP_PASSWORD_HASH is unset", () => {
+    vi.stubEnv("VITE_APP_USERNAME", "");
+    expect(isAppConfigured()).toBe(false);
+
+    vi.stubEnv("VITE_APP_USERNAME", "bernardo");
+    vi.stubEnv("VITE_APP_PASSWORD_HASH", "");
+    expect(isAppConfigured()).toBe(false);
+  });
+
+  it("login still just returns false when the app is unconfigured (no separate signal from login itself)", () => {
+    vi.stubEnv("VITE_APP_USERNAME", "");
+    vi.stubEnv("VITE_APP_PASSWORD_HASH", "");
+    expect(login("bernardo", "senha-correta")).toBe(false);
   });
 });

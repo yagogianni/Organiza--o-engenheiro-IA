@@ -6,8 +6,11 @@ import LoginPage from "@/components/auth/LoginPage";
 import * as auth from "@/lib/auth";
 
 describe("LoginPage", () => {
-  it("shows validation shake and error message on failed login", async () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("shows validation shake and error message on failed login when the app is configured", async () => {
     vi.spyOn(auth, "login").mockReturnValue(false);
+    vi.spyOn(auth, "isAppConfigured").mockReturnValue(true);
     render(<MemoryRouter><LoginPage /></MemoryRouter>);
 
     await userEvent.type(screen.getByLabelText("Usuário"), "bernardo");
@@ -17,6 +20,21 @@ describe("LoginPage", () => {
     await waitFor(() => {
       expect(screen.getByText(/usuário ou senha inválidos/i)).toBeInTheDocument();
     });
+  });
+
+  it("shows a distinct 'not configured' message when the app has no username/password hash set", async () => {
+    vi.spyOn(auth, "login").mockReturnValue(false);
+    vi.spyOn(auth, "isAppConfigured").mockReturnValue(false);
+    render(<MemoryRouter><LoginPage /></MemoryRouter>);
+
+    await userEvent.type(screen.getByLabelText("Usuário"), "bernardo");
+    await userEvent.type(screen.getByLabelText("Senha"), "qualquer");
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/aplicativo não configurado/i)).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/usuário ou senha inválidos/i)).not.toBeInTheDocument();
   });
 
   it("toggles password visibility", async () => {
