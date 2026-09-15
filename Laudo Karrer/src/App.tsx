@@ -16,6 +16,7 @@ export default function App() {
           <Route element={<AppLayout />}>
             <Route path="/" element={<Dashboard />} />
             <Route path="/novo-laudo" element={<NewLaudo />} />
+            <Route path="/novo-laudo/:id" element={<NewLaudo />} />
             <Route path="/laudos" element={<LaudoList />} />
             <Route path="/laudos/:id" element={<LaudoDetail />} />
           </Route>

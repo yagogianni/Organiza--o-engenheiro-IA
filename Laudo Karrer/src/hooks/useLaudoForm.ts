@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { ClientData, LaudoData, LaudoType, PhotoItem, PropertyData } from "@/types/laudo";
-import { saveLaudo, StorageQuotaError } from "@/lib/storage";
+import { getLaudo, saveLaudo, StorageQuotaError } from "@/lib/storage";
 
 export const STEP_COUNT = 6;
 
@@ -29,10 +29,10 @@ function emptyLaudo(): LaudoData {
   };
 }
 
-export function useLaudoForm() {
+export function useLaudoForm(id?: string) {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
-  const [laudo, setLaudo] = useState<LaudoData>(emptyLaudo);
+  const [laudo, setLaudo] = useState<LaudoData>(() => (id ? (getLaudo(id) ?? emptyLaudo()) : emptyLaudo()));
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const updateType = useCallback((type: LaudoType) => setLaudo((l) => ({ ...l, type })), []);

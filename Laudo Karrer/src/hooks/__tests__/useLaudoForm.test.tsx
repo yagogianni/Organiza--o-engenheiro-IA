@@ -51,4 +51,41 @@ describe("useLaudoForm", () => {
     expect(success).toBe(true);
     expect(storage.getLaudos()[0].status).toBe("completed");
   });
+
+  it("seeds the initial laudo from getLaudo(id) when an id is provided", () => {
+    const draft = {
+      id: "draft-1",
+      type: "orcamento" as const,
+      client: { name: "Cliente Existente", document: "", address: "" },
+      property: {
+        address: "Rua Antiga, 5",
+        neighborhood: "",
+        city: "",
+        state: "",
+        inspectionDate: "",
+        artNumber: "",
+        description: "",
+      },
+      photos: [],
+      conclusion: "",
+      status: "draft" as const,
+      createdAt: "2026-09-01T10:00:00.000Z",
+      updatedAt: "2026-09-01T10:00:00.000Z",
+    };
+    storage.saveLaudo(draft);
+
+    const { result } = renderHook(() => useLaudoForm("draft-1"), { wrapper });
+
+    expect(result.current.laudo.id).toBe("draft-1");
+    expect(result.current.laudo.client.name).toBe("Cliente Existente");
+    expect(result.current.laudo.property.address).toBe("Rua Antiga, 5");
+  });
+
+  it("falls back to an empty draft when the id doesn't match a saved laudo", () => {
+    const { result } = renderHook(() => useLaudoForm("does-not-exist"), { wrapper });
+
+    expect(result.current.laudo.id).not.toBe("does-not-exist");
+    expect(result.current.laudo.status).toBe("draft");
+    expect(result.current.laudo.client.name).toBe("");
+  });
 });

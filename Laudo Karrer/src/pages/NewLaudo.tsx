@@ -1,3 +1,4 @@
+import { useParams } from "react-router-dom";
 import { useLaudoForm } from "@/hooks/useLaudoForm";
 import { ProgressBar } from "@/components/form/ProgressBar";
 import { StepType } from "@/pages/steps/StepType";
@@ -8,7 +9,8 @@ import { StepConclusion } from "@/pages/steps/StepConclusion";
 import { StepReview } from "@/pages/steps/StepReview";
 
 export default function NewLaudo() {
-  const form = useLaudoForm();
+  const { id } = useParams<{ id: string }>();
+  const form = useLaudoForm(id);
 
   return (
     <div className="mx-auto max-w-3xl">
