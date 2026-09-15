@@ -6,9 +6,19 @@ export interface PageCursor {
   pageNumber: number;
 }
 
+// Matches conclusion.ts's body text color — the sensible default for any
+// section that doesn't set its own doc.setTextColor(...).
+const DEFAULT_TEXT_COLOR = "#1E293B";
+
 export function drawChrome(doc: jsPDF, sectionTitle: string, pageNumber: number): void {
   drawHeader(doc, sectionTitle, pageNumber);
   drawFooter(doc);
+  // drawFooter leaves the text color set to its gray — reset it here so every
+  // section starts each fresh page with a known, correct color, regardless of
+  // what the footer (or header) last set. Without this, drawFieldList
+  // (client/property sections) and drawSignaturesSection — neither of which
+  // set their own color — would inherit the footer's gray.
+  doc.setTextColor(DEFAULT_TEXT_COLOR);
 }
 
 export function newPage(doc: jsPDF, sectionTitle: string, cursor: PageCursor): void {
