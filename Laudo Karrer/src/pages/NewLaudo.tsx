@@ -10,6 +10,16 @@ import { StepReview } from "@/pages/steps/StepReview";
 
 export default function NewLaudo() {
   const { id } = useParams<{ id: string }>();
+  // Keying on `id` forces a full remount when navigating between
+  // /novo-laudo, /novo-laudo/:id, or between two different :id values
+  // client-side (no page reload) — without it, React reuses the same
+  // component instance and useLaudoForm's lazy useState initializer
+  // never re-runs, leaking a previously-loaded draft's data/step into
+  // what the user believes is a fresh laudo (or a different draft).
+  return <NewLaudoForm key={id ?? "new"} id={id} />;
+}
+
+function NewLaudoForm({ id }: { id?: string }) {
   const form = useLaudoForm(id);
 
   return (
