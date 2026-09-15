@@ -16,8 +16,15 @@ npm run dev
 ## Como gerar o hash da senha
 
 O login usa usuário + senha definidos em `.env` (`VITE_APP_USERNAME`,
-`VITE_APP_PASSWORD_HASH`). A senha nunca fica em texto puro no projeto — só o
-hash.
+`VITE_APP_PASSWORD_HASH`). Isso é uma trava de acesso simples — serve para
+impedir que um visitante casual abra o app, não é uma proteção de segurança
+de verdade. `VITE_APP_PASSWORD_HASH` guarda uma codificação reversível
+(Base64 de `encodeURIComponent(senha)`), não um hash criptográfico, e esse
+valor fica embutido como texto simples no JavaScript publicado — qualquer
+pessoa com acesso ao site publicado consegue decodificá-lo e recuperar a
+senha original. Por isso: **não reutilize essa senha em nenhum outro lugar**
+e não trate o login como proteção dos dados — os laudos de verdade ficam no
+`localStorage` de cada navegador, independentemente de estar logado ou não.
 
 No console do navegador (ou no Node):
 ```js
