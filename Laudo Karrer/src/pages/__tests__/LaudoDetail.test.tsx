@@ -1,8 +1,9 @@
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { render, screen, fireEvent, within, waitFor } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { vi } from "vitest";
 import LaudoDetail from "@/pages/LaudoDetail";
-import { saveLaudo, getLaudo } from "@/lib/storage";
+import { saveLaudo, getLaudo, StorageQuotaError } from "@/lib/storage";
+import * as storageModule from "@/lib/storage";
 import * as pdfModule from "@/lib/pdf/generateLaudo";
 import type { LaudoData } from "@/types/laudo";
 
@@ -42,6 +43,7 @@ function renderDetail(id: string) {
 
 describe("LaudoDetail", () => {
   beforeEach(() => localStorage.clear());
+  afterEach(() => vi.restoreAllMocks());
 
   it("shows a not-found message for an unknown id", () => {
     renderDetail("does-not-exist");
@@ -56,13 +58,48 @@ describe("LaudoDetail", () => {
     expect(screen.getByText("ART-99")).toBeInTheDocument();
   });
 
-  it("downloads the PDF when clicking Baixar PDF", () => {
+  it("downloads the PDF when clicking Baixar PDF", async () => {
     saveLaudo(makeLaudo());
     const downloadSpy = vi.spyOn(pdfModule, "downloadLaudoPdf").mockImplementation(() => {});
     renderDetail("laudo-1");
 
     fireEvent.click(screen.getByRole("button", { name: /baixar pdf/i }));
-    expect(downloadSpy).toHaveBeenCalled();
+    await waitFor(() => expect(downloadSpy).toHaveBeenCalled());
+  });
+
+  it("shows an error and re-enables the button when the PDF download fails", async () => {
+    saveLaudo(makeLaudo());
+    vi.spyOn(pdfModule, "downloadLaudoPdf").mockImplementation(() => {
+      throw new Error("boom");
+    });
+    renderDetail("laudo-1");
+
+    const button = screen.getByRole("button", { name: /baixar pdf/i });
+    fireEvent.click(button);
+
+    await waitFor(() =>
+      expect(screen.getByText(/não foi possível gerar o pdf/i)).toBeInTheDocument(),
+    );
+    expect(button).not.toBeDisabled();
+  });
+
+  it("keeps the notes editor open and shows an error when saving notes hits the storage quota", async () => {
+    saveLaudo(makeLaudo({ notes: "Nota original" }));
+    vi.spyOn(storageModule, "saveLaudo").mockImplementation(() => {
+      throw new StorageQuotaError();
+    });
+    renderDetail("laudo-1");
+
+    fireEvent.click(screen.getByRole("button", { name: /editar notas/i }));
+    const textarea = screen.getByDisplayValue("Nota original");
+    fireEvent.change(textarea, { target: { value: "Nota atualizada" } });
+    fireEvent.click(screen.getByRole("button", { name: /salvar notas/i }));
+
+    await waitFor(() =>
+      expect(screen.getByText(/espaço de armazenamento cheio/i)).toBeInTheDocument(),
+    );
+    // The editor stays open with the user's draft so nothing is lost.
+    expect(screen.getByDisplayValue("Nota atualizada")).toBeInTheDocument();
   });
 
   it("edits and saves the technical notes", () => {

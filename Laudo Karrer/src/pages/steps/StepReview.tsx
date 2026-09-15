@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
@@ -13,11 +14,32 @@ export interface StepReviewProps {
 }
 
 export function StepReview({ laudo, saveError, onBack, onSaveDraft, onComplete }: StepReviewProps) {
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+
   function handleGeneratePdf() {
+    if (isGenerating) return;
     const success = onComplete();
-    if (success) {
-      downloadLaudoPdf(laudo);
-    }
+    if (!success) return;
+
+    setDownloadError(null);
+    setIsGenerating(true);
+    // Defer the (synchronous, potentially slow) PDF generation to the next tick
+    // so React can commit and paint the "Gerando PDF…" state first.
+    setTimeout(() => {
+      try {
+        downloadLaudoPdf(laudo);
+      } catch {
+        // The laudo was already marked completed and saved above — only the
+        // download itself failed, so the user should retry downloading, not
+        // re-fill the form.
+        setDownloadError(
+          "O laudo foi salvo, mas o download do PDF falhou. Tente baixar novamente.",
+        );
+      } finally {
+        setIsGenerating(false);
+      }
+    }, 0);
   }
 
   return (
@@ -54,6 +76,7 @@ export function StepReview({ laudo, saveError, onBack, onSaveDraft, onComplete }
       </div>
 
       {saveError && <p className="mb-4 text-sm text-red-600">{saveError}</p>}
+      {downloadError && <p className="mb-4 text-sm text-red-600">{downloadError}</p>}
 
       <div className="flex justify-between">
         <Button type="button" variant="outline" onClick={onBack}>
@@ -63,8 +86,8 @@ export function StepReview({ laudo, saveError, onBack, onSaveDraft, onComplete }
           <Button type="button" variant="outline" onClick={onSaveDraft}>
             Salvar rascunho
           </Button>
-          <ShimmerButton onClick={handleGeneratePdf} background="#1B3A6B">
-            Gerar PDF
+          <ShimmerButton onClick={handleGeneratePdf} disabled={isGenerating} background="#1B3A6B">
+            {isGenerating ? "Gerando PDF…" : "Gerar PDF"}
           </ShimmerButton>
         </div>
       </div>

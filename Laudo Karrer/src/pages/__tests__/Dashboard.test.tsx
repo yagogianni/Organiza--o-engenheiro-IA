@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { vi } from "vitest";
 import Dashboard from "@/pages/Dashboard";
@@ -50,13 +50,13 @@ describe("Dashboard", () => {
     expect(screen.getAllByText("Cliente 1")).toHaveLength(3);
   });
 
-  it("downloads the PDF when clicking the download action", () => {
+  it("downloads the PDF when clicking the download action", async () => {
     saveLaudo(makeLaudo({ id: "1" }));
     const downloadSpy = vi.spyOn(pdfModule, "downloadLaudoPdf").mockImplementation(() => {});
     render(<MemoryRouter><Dashboard /></MemoryRouter>);
 
     fireEvent.click(screen.getByRole("button", { name: /baixar pdf/i }));
-    expect(downloadSpy).toHaveBeenCalled();
+    await waitFor(() => expect(downloadSpy).toHaveBeenCalled());
   });
 
   it("deletes a laudo after confirming the dialog", () => {

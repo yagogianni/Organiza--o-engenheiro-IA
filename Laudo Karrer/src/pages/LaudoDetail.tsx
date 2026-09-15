@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { LAUDO_TYPE_LABELS, type LaudoData } from "@/types/laudo";
-import { getLaudo, saveLaudo, deleteLaudo } from "@/lib/storage";
+import { getLaudo, saveLaudo, deleteLaudo, StorageQuotaError } from "@/lib/storage";
 import { downloadLaudoPdf } from "@/lib/pdf/generateLaudo";
 
 export default function LaudoDetail() {
@@ -14,7 +14,10 @@ export default function LaudoDetail() {
   const [laudo, setLaudo] = useState<LaudoData | undefined>(undefined);
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesDraft, setNotesDraft] = useState("");
+  const [notesError, setNotesError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) setLaudo(getLaudo(id));
@@ -26,14 +29,20 @@ export default function LaudoDetail() {
 
   function handleStartEditNotes() {
     setNotesDraft(laudo!.notes ?? "");
+    setNotesError(null);
     setEditingNotes(true);
   }
 
   function handleSaveNotes() {
     const updated = { ...laudo!, notes: notesDraft };
-    saveLaudo(updated);
-    setLaudo(updated);
-    setEditingNotes(false);
+    try {
+      saveLaudo(updated);
+      setLaudo(updated);
+      setEditingNotes(false);
+      setNotesError(null);
+    } catch (err) {
+      setNotesError(err instanceof StorageQuotaError ? err.message : "Erro ao salvar as notas.");
+    }
   }
 
   function handleDelete() {
@@ -41,13 +50,39 @@ export default function LaudoDetail() {
     navigate("/laudos");
   }
 
+  function handleDownload() {
+    if (isGenerating) return;
+    setDownloadError(null);
+    setIsGenerating(true);
+    // Defer the (synchronous, potentially slow) PDF generation to the next tick
+    // so React can commit and paint the "Gerando PDF…" state first.
+    setTimeout(() => {
+      try {
+        downloadLaudoPdf(laudo!);
+      } catch {
+        setDownloadError("Não foi possível gerar o PDF. Tente novamente.");
+      } finally {
+        setIsGenerating(false);
+      }
+    }, 0);
+  }
+
   return (
     <div className="max-w-2xl">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-xl font-semibold text-karrer-navy">{laudo.client.name || "Sem nome"}</h1>
-        <Badge className={laudo.status === "completed" ? "bg-green-600" : "bg-amber-500"}>
-          {laudo.status === "completed" ? "Concluído" : "Rascunho"}
-        </Badge>
+        <div className="flex items-center gap-3">
+          <Badge className={laudo.status === "completed" ? "bg-green-600" : "bg-amber-500"}>
+            {laudo.status === "completed" ? "Concluído" : "Rascunho"}
+          </Badge>
+          {laudo.status === "draft" && (
+            <Link to={`/novo-laudo/${laudo.id}`}>
+              <Button type="button" variant="outline">
+                Continuar editando
+              </Button>
+            </Link>
+          )}
+        </div>
       </div>
 
       <dl className="mb-6 grid grid-cols-2 gap-4 text-sm">
@@ -102,6 +137,7 @@ export default function LaudoDetail() {
                 Salvar notas
               </Button>
             </div>
+            {notesError && <p className="mt-2 text-sm text-red-600">{notesError}</p>}
           </>
         ) : (
           <p className="text-sm text-slate-600">{laudo.notes || "—"}</p>
@@ -111,15 +147,17 @@ export default function LaudoDetail() {
       <div className="flex gap-3">
         <Button
           type="button"
-          onClick={() => downloadLaudoPdf(laudo)}
+          onClick={handleDownload}
+          disabled={isGenerating}
           className="bg-karrer-blue hover:bg-karrer-lightblue"
         >
-          Baixar PDF
+          {isGenerating ? "Gerando PDF…" : "Baixar PDF"}
         </Button>
         <Button type="button" variant="outline" onClick={() => setConfirmOpen(true)}>
           Excluir laudo
         </Button>
       </div>
+      {downloadError && <p className="mt-2 text-sm text-red-600">{downloadError}</p>}
 
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent>

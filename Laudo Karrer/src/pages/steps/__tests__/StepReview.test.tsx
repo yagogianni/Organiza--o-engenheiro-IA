@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { vi } from "vitest";
 import { StepReview } from "@/pages/steps/StepReview";
 import * as pdfModule from "@/lib/pdf/generateLaudo";
@@ -44,7 +44,7 @@ describe("StepReview", () => {
     expect(onSaveDraft).toHaveBeenCalled();
   });
 
-  it("completes and downloads the PDF when clicking Gerar PDF and completion succeeds", () => {
+  it("completes and downloads the PDF when clicking Gerar PDF and completion succeeds", async () => {
     const onComplete = vi.fn().mockReturnValue(true);
     const downloadSpy = vi.spyOn(pdfModule, "downloadLaudoPdf").mockImplementation(() => {});
     render(
@@ -54,7 +54,42 @@ describe("StepReview", () => {
     fireEvent.click(screen.getByRole("button", { name: /gerar pdf/i }));
 
     expect(onComplete).toHaveBeenCalled();
-    expect(downloadSpy).toHaveBeenCalledWith(laudo);
+    await waitFor(() => expect(downloadSpy).toHaveBeenCalledWith(laudo));
+  });
+
+  it("shows a distinct message when the laudo saved but the PDF download itself failed", async () => {
+    const onComplete = vi.fn().mockReturnValue(true);
+    vi.spyOn(pdfModule, "downloadLaudoPdf").mockImplementation(() => {
+      throw new Error("boom");
+    });
+    render(
+      <StepReview laudo={laudo} saveError={null} onBack={vi.fn()} onSaveDraft={vi.fn()} onComplete={onComplete} />,
+    );
+
+    const button = screen.getByRole("button", { name: /gerar pdf/i });
+    fireEvent.click(button);
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(/o laudo foi salvo, mas o download do pdf falhou/i),
+      ).toBeInTheDocument(),
+    );
+    expect(button).not.toBeDisabled();
+  });
+
+  it("disables the button and shows a loading label while generating, preventing a double click", async () => {
+    const onComplete = vi.fn().mockReturnValue(true);
+    const downloadSpy = vi.spyOn(pdfModule, "downloadLaudoPdf").mockImplementation(() => {});
+    render(
+      <StepReview laudo={laudo} saveError={null} onBack={vi.fn()} onSaveDraft={vi.fn()} onComplete={onComplete} />,
+    );
+
+    const button = screen.getByRole("button", { name: /gerar pdf/i });
+    fireEvent.click(button);
+    fireEvent.click(button); // simulate an impatient double click
+
+    await waitFor(() => expect(downloadSpy).toHaveBeenCalledTimes(1));
+    expect(onComplete).toHaveBeenCalledTimes(1);
   });
 
   it("does not download when completion fails (e.g. storage quota)", () => {
