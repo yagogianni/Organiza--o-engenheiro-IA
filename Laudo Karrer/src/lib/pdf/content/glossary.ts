@@ -261,6 +261,16 @@ export const GLOSSARY: GlossaryTerm[] = [
       "Vícios ocultos que diminuem o valor da coisa ou a tornam imprópria ao uso a que se destina, e que, se fossem do conhecimento prévio do adquirente, ensejariam pedido de abatimento do preço pago ou inviabilizariam a compra.",
   },
   {
+    term: "VIDA ÚTIL",
+    definition:
+      "Intervalo de tempo ao longo do qual a edificação e suas partes constituintes atendem aos requisitos funcionais para os quais foram projetadas, obedecidos os planos de operação, uso e manutenção previstos.",
+  },
+  {
+    term: "VISTORIA",
+    definition:
+      "Constatação de um fato, mediante exame circunstanciado e descrição minuciosa dos elementos que o constituem e/ou influenciam, sem a indagação das causas que o motivaram.",
+  },
+  {
     term: "VISTORIA CAUTELAR",
     definition:
       "Constatação mediante exame circunstanciado dos imóveis localizados na área de abrangência de um canteiro de obras com o propósito de caracterizar a sua tipologia, estado de conservação, padrão construtivo, idade aparente e eventuais anomalias e falhas, bem como outras características importantes, devendo conter o registro fotográfico das anomalias e falhas identificadas no imóvel vistoriado.",
