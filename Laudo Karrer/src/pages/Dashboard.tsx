@@ -4,10 +4,10 @@ import { SparklesText } from "@/components/ui/sparkles-text";
 import { GradientText } from "@/components/ui/gradient-text";
 import { LaudoListItem } from "@/components/laudo/LaudoListItem";
 import { getLaudos, deleteLaudo } from "@/lib/storage";
-import type { LaudoData } from "@/types/laudo";
+import type { PhotoReport } from "@/types/laudo";
 
 export default function Dashboard() {
-  const [laudos, setLaudos] = useState<LaudoData[]>([]);
+  const [laudos, setLaudos] = useState<PhotoReport[]>([]);
 
   useEffect(() => {
     setLaudos(getLaudos());

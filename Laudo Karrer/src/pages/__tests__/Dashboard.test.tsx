@@ -4,27 +4,16 @@ import { vi } from "vitest";
 import Dashboard from "@/pages/Dashboard";
 import { saveLaudo } from "@/lib/storage";
 import * as pdfModule from "@/lib/pdf/generateLaudo";
-import type { LaudoData } from "@/types/laudo";
+import type { PhotoReport } from "@/types/laudo";
 
-function makeLaudo(overrides: Partial<LaudoData> = {}): LaudoData {
+function makeReport(overrides: Partial<PhotoReport> = {}): PhotoReport {
   return {
     id: crypto.randomUUID(),
-    type: "vistoria_cautelar",
-    client: { name: "Cliente 1", document: "", address: "" },
-    property: {
-      address: "Rua X",
-      neighborhood: "",
-      city: "",
-      state: "",
-      inspectionDate: "",
-      artNumber: "",
-      description: "",
-    },
+    label: "Registro 1",
     photos: [],
-    conclusion: "",
     status: "draft",
-    createdAt: "2026-09-14T10:00:00.000Z",
-    updatedAt: "2026-09-14T10:00:00.000Z",
+    createdAt: "2026-09-25T10:00:00.000Z",
+    updatedAt: "2026-09-25T10:00:00.000Z",
     ...overrides,
   };
 }
@@ -38,20 +27,20 @@ describe("Dashboard", () => {
   });
 
   it("shows correct stat counts and the recent laudo list", () => {
-    saveLaudo(makeLaudo({ id: "1", status: "completed" }));
-    saveLaudo(makeLaudo({ id: "2", status: "draft" }));
-    saveLaudo(makeLaudo({ id: "3", status: "draft" }));
+    saveLaudo(makeReport({ id: "1", status: "completed" }));
+    saveLaudo(makeReport({ id: "2", status: "draft" }));
+    saveLaudo(makeReport({ id: "3", status: "draft" }));
 
     render(<MemoryRouter><Dashboard /></MemoryRouter>);
 
     expect(screen.getByTestId("stat-total")).toHaveTextContent("3");
     expect(screen.getByTestId("stat-completed")).toHaveTextContent("1");
     expect(screen.getByTestId("stat-drafts")).toHaveTextContent("2");
-    expect(screen.getAllByText("Cliente 1")).toHaveLength(3);
+    expect(screen.getAllByText("Registro 1")).toHaveLength(3);
   });
 
   it("downloads the PDF when clicking the download action", async () => {
-    saveLaudo(makeLaudo({ id: "1" }));
+    saveLaudo(makeReport({ id: "1" }));
     const downloadSpy = vi.spyOn(pdfModule, "downloadLaudoPdf").mockImplementation(() => {});
     render(<MemoryRouter><Dashboard /></MemoryRouter>);
 
@@ -60,7 +49,7 @@ describe("Dashboard", () => {
   });
 
   it("deletes a laudo after confirming the dialog", () => {
-    saveLaudo(makeLaudo({ id: "1" }));
+    saveLaudo(makeReport({ id: "1" }));
     render(<MemoryRouter><Dashboard /></MemoryRouter>);
 
     fireEvent.click(screen.getByRole("button", { name: /excluir laudo/i }));
