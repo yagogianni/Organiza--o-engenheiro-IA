@@ -1,4 +1,4 @@
-import type { LaudoData } from "@/types/laudo";
+import type { PhotoReport } from "@/types/laudo";
 
 const STORAGE_KEY = "karrer_laudos";
 
@@ -9,33 +9,33 @@ export class StorageQuotaError extends Error {
   }
 }
 
-export function getLaudos(): LaudoData[] {
+export function getLaudos(): PhotoReport[] {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) return [];
   try {
-    return JSON.parse(raw) as LaudoData[];
+    return JSON.parse(raw) as PhotoReport[];
   } catch {
     return [];
   }
 }
 
-export function getLaudo(id: string): LaudoData | undefined {
+export function getLaudo(id: string): PhotoReport | undefined {
   return getLaudos().find((l) => l.id === id);
 }
 
-export function saveLaudo(laudo: LaudoData): void {
-  const laudos = getLaudos();
-  const index = laudos.findIndex((l) => l.id === laudo.id);
-  const updated: LaudoData = { ...laudo, updatedAt: new Date().toISOString() };
+export function saveLaudo(report: PhotoReport): void {
+  const reports = getLaudos();
+  const index = reports.findIndex((l) => l.id === report.id);
+  const updated: PhotoReport = { ...report, updatedAt: new Date().toISOString() };
 
   if (index >= 0) {
-    laudos[index] = updated;
+    reports[index] = updated;
   } else {
-    laudos.push(updated);
+    reports.push(updated);
   }
 
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(laudos));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(reports));
   } catch (err) {
     if (
       err instanceof DOMException &&
@@ -48,6 +48,6 @@ export function saveLaudo(laudo: LaudoData): void {
 }
 
 export function deleteLaudo(id: string): void {
-  const laudos = getLaudos().filter((l) => l.id !== id);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(laudos));
+  const reports = getLaudos().filter((l) => l.id !== id);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(reports));
 }

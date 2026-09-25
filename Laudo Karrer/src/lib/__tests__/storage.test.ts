@@ -1,26 +1,15 @@
 import { beforeEach, vi } from "vitest";
 import { getLaudos, getLaudo, saveLaudo, deleteLaudo, StorageQuotaError } from "@/lib/storage";
-import type { LaudoData } from "@/types/laudo";
+import type { PhotoReport } from "@/types/laudo";
 
-function makeLaudo(overrides: Partial<LaudoData> = {}): LaudoData {
+function makeReport(overrides: Partial<PhotoReport> = {}): PhotoReport {
   return {
-    id: "laudo-1",
-    type: "vistoria_cautelar",
-    client: { name: "Cliente Teste", document: "123.456.789-00", address: "Rua A, 1" },
-    property: {
-      address: "Rua B, 2",
-      neighborhood: "Centro",
-      city: "Balneário Camboriú",
-      state: "SC",
-      inspectionDate: "2026-09-14",
-      artNumber: "ART-001",
-      description: "Casa térrea",
-    },
+    id: "report-1",
+    label: "Vistoria Rua X",
     photos: [],
-    conclusion: "Conclusão de teste",
     status: "draft",
-    createdAt: "2026-09-14T10:00:00.000Z",
-    updatedAt: "2026-09-14T10:00:00.000Z",
+    createdAt: "2026-09-25T10:00:00.000Z",
+    updatedAt: "2026-09-25T10:00:00.000Z",
     ...overrides,
   };
 }
@@ -34,43 +23,66 @@ describe("storage", () => {
     expect(getLaudos()).toEqual([]);
   });
 
-  it("saveLaudo adds a new laudo and getLaudo finds it by id", () => {
-    saveLaudo(makeLaudo());
-    expect(getLaudo("laudo-1")?.client.name).toBe("Cliente Teste");
+  it("saveLaudo adds a new report and getLaudo finds it by id", () => {
+    saveLaudo(makeReport());
+    expect(getLaudo("report-1")?.label).toBe("Vistoria Rua X");
   });
 
-  it("saveLaudo updates an existing laudo in place and bumps updatedAt", () => {
-    saveLaudo(makeLaudo({ updatedAt: "2026-09-14T10:00:00.000Z" }));
-    saveLaudo(makeLaudo({ conclusion: "Conclusão revisada" }));
+  it("saveLaudo updates an existing report in place and bumps updatedAt", () => {
+    saveLaudo(makeReport({ updatedAt: "2026-09-25T10:00:00.000Z" }));
+    saveLaudo(makeReport({ label: "Vistoria revisada" }));
 
-    const laudos = getLaudos();
-    expect(laudos).toHaveLength(1);
-    expect(laudos[0].conclusion).toBe("Conclusão revisada");
-    expect(laudos[0].updatedAt).not.toBe("2026-09-14T10:00:00.000Z");
+    const reports = getLaudos();
+    expect(reports).toHaveLength(1);
+    expect(reports[0].label).toBe("Vistoria revisada");
+    expect(reports[0].updatedAt).not.toBe("2026-09-25T10:00:00.000Z");
   });
 
   it("getLaudo returns undefined for an unknown id", () => {
     expect(getLaudo("does-not-exist")).toBeUndefined();
   });
 
-  it("deleteLaudo removes only the targeted laudo", () => {
-    saveLaudo(makeLaudo({ id: "laudo-1" }));
-    saveLaudo(makeLaudo({ id: "laudo-2" }));
-    deleteLaudo("laudo-1");
+  it("deleteLaudo removes only the targeted report", () => {
+    saveLaudo(makeReport({ id: "report-1" }));
+    saveLaudo(makeReport({ id: "report-2" }));
+    deleteLaudo("report-1");
 
-    const laudos = getLaudos();
-    expect(laudos).toHaveLength(1);
-    expect(laudos[0].id).toBe("laudo-2");
+    const reports = getLaudos();
+    expect(reports).toHaveLength(1);
+    expect(reports[0].id).toBe("report-2");
   });
 
   it("saveLaudo throws StorageQuotaError when localStorage is full", () => {
     const setItemSpy = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
-      const err = new DOMException("quota exceeded", "QuotaExceededError");
-      throw err;
+      throw new DOMException("quota exceeded", "QuotaExceededError");
     });
 
-    expect(() => saveLaudo(makeLaudo())).toThrow(StorageQuotaError);
+    expect(() => saveLaudo(makeReport())).toThrow(StorageQuotaError);
 
     setItemSpy.mockRestore();
+  });
+
+  it("does not crash reading a pre-existing entry saved in the old LaudoData shape", () => {
+    // Accepted breaking change (see spec): no migration. A user who already
+    // has laudos saved from before this feature must not see the app crash —
+    // the old-shaped object round-trips through JSON untouched; callers that
+    // read the new fields (label, photo.size) just see `undefined`.
+    const legacyShaped = {
+      id: "old-1",
+      type: "vistoria_cautelar",
+      client: { name: "Cliente Antigo", document: "", address: "" },
+      property: { address: "Rua Antiga", neighborhood: "", city: "", state: "", inspectionDate: "", artNumber: "", description: "" },
+      photos: [{ id: "p1", dataUrl: "data:1", caption: "Velha", order: 1 }],
+      conclusion: "",
+      status: "draft",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    };
+    localStorage.setItem("karrer_laudos", JSON.stringify([legacyShaped]));
+
+    expect(() => getLaudos()).not.toThrow();
+    const [loaded] = getLaudos();
+    expect(loaded.id).toBe("old-1");
+    expect(loaded.label).toBeUndefined();
   });
 });
