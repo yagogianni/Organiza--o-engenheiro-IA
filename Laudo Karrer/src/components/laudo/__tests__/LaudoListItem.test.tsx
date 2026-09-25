@@ -3,27 +3,16 @@ import { MemoryRouter } from "react-router-dom";
 import { vi } from "vitest";
 import { LaudoListItem } from "@/components/laudo/LaudoListItem";
 import * as pdfModule from "@/lib/pdf/generateLaudo";
-import type { LaudoData } from "@/types/laudo";
+import type { PhotoReport } from "@/types/laudo";
 
-function makeLaudo(overrides: Partial<LaudoData> = {}): LaudoData {
+function makeReport(overrides: Partial<PhotoReport> = {}): PhotoReport {
   return {
-    id: "laudo-1",
-    type: "vistoria_cautelar",
-    client: { name: "João Pereira", document: "", address: "" },
-    property: {
-      address: "Rua das Flores, 10",
-      neighborhood: "",
-      city: "",
-      state: "",
-      inspectionDate: "",
-      artNumber: "",
-      description: "",
-    },
+    id: "report-1",
+    label: "Vistoria Rua das Flores",
     photos: [],
-    conclusion: "",
     status: "draft",
-    createdAt: "2026-09-14T10:00:00.000Z",
-    updatedAt: "2026-09-14T10:00:00.000Z",
+    createdAt: "2026-09-25T10:00:00.000Z",
+    updatedAt: "2026-09-25T10:00:00.000Z",
     ...overrides,
   };
 }
@@ -31,20 +20,41 @@ function makeLaudo(overrides: Partial<LaudoData> = {}): LaudoData {
 afterEach(() => vi.restoreAllMocks());
 
 describe("LaudoListItem", () => {
+  it("shows the label when present", () => {
+    render(
+      <MemoryRouter>
+        <LaudoListItem laudo={makeReport({ label: "Vistoria Rua das Flores" })} onDelete={vi.fn()} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText("Vistoria Rua das Flores")).toBeInTheDocument();
+  });
+
+  it("falls back to a photo-count title when there is no label", () => {
+    render(
+      <MemoryRouter>
+        <LaudoListItem
+          laudo={makeReport({ label: undefined, photos: [{ id: "p1", dataUrl: "d", caption: "", order: 1, size: "quarter" }] })}
+          onDelete={vi.fn()}
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText("Registro fotográfico — 1 foto(s)")).toBeInTheDocument();
+  });
+
   it("shows an 'Editar laudo' link to the resume-editing route for a draft", () => {
     render(
       <MemoryRouter>
-        <LaudoListItem laudo={makeLaudo({ status: "draft" })} onDelete={vi.fn()} />
+        <LaudoListItem laudo={makeReport({ status: "draft" })} onDelete={vi.fn()} />
       </MemoryRouter>,
     );
     const editLink = screen.getByRole("link", { name: /editar laudo/i });
-    expect(editLink).toHaveAttribute("href", "/novo-laudo/laudo-1");
+    expect(editLink).toHaveAttribute("href", "/novo-laudo/report-1");
   });
 
   it("does not show an edit link for a completed laudo", () => {
     render(
       <MemoryRouter>
-        <LaudoListItem laudo={makeLaudo({ status: "completed" })} onDelete={vi.fn()} />
+        <LaudoListItem laudo={makeReport({ status: "completed" })} onDelete={vi.fn()} />
       </MemoryRouter>,
     );
     expect(screen.queryByRole("link", { name: /editar laudo/i })).not.toBeInTheDocument();
@@ -54,7 +64,7 @@ describe("LaudoListItem", () => {
     const downloadSpy = vi.spyOn(pdfModule, "downloadLaudoPdf").mockImplementation(() => {});
     render(
       <MemoryRouter>
-        <LaudoListItem laudo={makeLaudo()} onDelete={vi.fn()} />
+        <LaudoListItem laudo={makeReport()} onDelete={vi.fn()} />
       </MemoryRouter>,
     );
 
@@ -71,7 +81,7 @@ describe("LaudoListItem", () => {
     });
     render(
       <MemoryRouter>
-        <LaudoListItem laudo={makeLaudo()} onDelete={vi.fn()} />
+        <LaudoListItem laudo={makeReport()} onDelete={vi.fn()} />
       </MemoryRouter>,
     );
 
