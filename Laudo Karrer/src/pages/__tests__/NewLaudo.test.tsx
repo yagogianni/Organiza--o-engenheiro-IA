@@ -1,40 +1,34 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter, Routes, Route, useNavigate } from "react-router-dom";
+import { vi } from "vitest";
 import NewLaudo from "@/pages/NewLaudo";
 import { saveLaudo } from "@/lib/storage";
-import type { LaudoData } from "@/types/laudo";
+import * as imageCompression from "@/lib/imageCompression";
+import * as pdfModule from "@/lib/pdf/generateLaudo";
+import type { PhotoReport } from "@/types/laudo";
 
-const draftWithClientName: LaudoData = {
+function makeFile(name: string) {
+  return new File(["fake"], name, { type: "image/jpeg" });
+}
+
+const draftWithLabel: PhotoReport = {
   id: "draft-1",
-  type: "vistoria_cautelar",
-  client: { name: "Cliente Antigo", document: "", address: "" },
-  property: {
-    address: "",
-    neighborhood: "",
-    city: "",
-    state: "",
-    inspectionDate: "",
-    artNumber: "",
-    description: "",
-  },
-  photos: [],
-  conclusion: "",
+  label: "Registro Antigo",
+  photos: [{ id: "p1", dataUrl: "data:1", caption: "Fachada", order: 1, size: "quarter" }],
   status: "draft",
   createdAt: "2026-01-01T00:00:00.000Z",
   updatedAt: "2026-01-01T00:00:00.000Z",
 };
 
-function NavToNewLaudoButton() {
+function NavToNewButton() {
   const navigate = useNavigate();
-  return (
-    <button onClick={() => navigate("/novo-laudo")}>Novo Laudo</button>
-  );
+  return <button onClick={() => navigate("/novo-laudo")}>Novo Registro</button>;
 }
 
-function renderWizard() {
+function renderScreen() {
   return render(
     <MemoryRouter initialEntries={["/novo-laudo/draft-1"]}>
-      <NavToNewLaudoButton />
+      <NavToNewButton />
       <Routes>
         <Route path="/novo-laudo" element={<NewLaudo />} />
         <Route path="/novo-laudo/:id" element={<NewLaudo />} />
@@ -43,28 +37,81 @@ function renderWizard() {
   );
 }
 
-describe("NewLaudo route remount", () => {
+describe("NewLaudo", () => {
   beforeEach(() => {
     localStorage.clear();
-    saveLaudo(draftWithClientName);
+    vi.spyOn(imageCompression, "compressImageFile").mockResolvedValue("data:image/jpeg;base64,FAKE");
   });
+  afterEach(() => vi.restoreAllMocks());
 
   it("resets the form when navigating from /novo-laudo/:id to /novo-laudo without a full page reload", () => {
-    renderWizard();
+    saveLaudo(draftWithLabel);
+    renderScreen();
 
-    // advance from StepType to StepClient, which surfaces the loaded draft's client name
-    fireEvent.click(screen.getByText("Laudo de Vistoria Cautelar"));
-    expect(screen.getByLabelText(/nome completo/i)).toHaveValue("Cliente Antigo");
+    expect(screen.getByLabelText(/apelido/i)).toHaveValue("Registro Antigo");
 
-    // simulate clicking "Novo Laudo" in the sidebar — a client-side navigation, no reload
-    fireEvent.click(screen.getByText("Novo Laudo"));
+    fireEvent.click(screen.getByText("Novo Registro"));
 
-    // must be back on step 0 (StepType) with no trace of the old draft's data —
-    // if the route collision bug is present, the component doesn't remount and
-    // step/client data from draft-1 leak into what the user believes is a new laudo
-    expect(
-      screen.getByText("Que tipo de documento você vai gerar?"),
-    ).toBeInTheDocument();
-    expect(screen.queryByDisplayValue("Cliente Antigo")).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/apelido/i)).toHaveValue("");
+    expect(screen.queryByDisplayValue("Fachada")).not.toBeInTheDocument();
+  });
+
+  it("uploads and compresses photos, adding them numbered from 1", async () => {
+    saveLaudo(draftWithLabel); // seeds the existing draft, which already has 1 photo
+    renderScreen();
+    fireEvent.drop(screen.getByRole("button", { name: /arraste fotos/i }), {
+      dataTransfer: { files: [makeFile("a.jpg"), makeFile("b.jpg")] },
+    });
+
+    await waitFor(() => expect(screen.getAllByPlaceholderText(/legenda/i)).toHaveLength(3));
+    expect(screen.getByText("3")).toBeInTheDocument(); // last photo's order badge
+  });
+
+  it("disables Gerar PDF with 0 photos and enables it once a photo is added", async () => {
+    render(
+      <MemoryRouter initialEntries={["/novo-laudo"]}>
+        <Routes>
+          <Route path="/novo-laudo" element={<NewLaudo />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("button", { name: /gerar pdf/i })).toBeDisabled();
+
+    fireEvent.drop(screen.getByRole("button", { name: /arraste fotos/i }), {
+      dataTransfer: { files: [makeFile("a.jpg")] },
+    });
+
+    await waitFor(() => expect(screen.getByRole("button", { name: /gerar pdf/i })).not.toBeDisabled());
+  });
+
+  it("removes a photo and renumbers the rest", async () => {
+    saveLaudo({
+      ...draftWithLabel,
+      photos: [
+        { id: "p1", dataUrl: "data:1", caption: "Um", order: 1, size: "quarter" },
+        { id: "p2", dataUrl: "data:2", caption: "Dois", order: 2, size: "quarter" },
+      ],
+    });
+    renderScreen();
+
+    fireEvent.click(screen.getByRole("button", { name: /remover foto 1/i }));
+
+    await waitFor(() => expect(screen.queryByDisplayValue("Um")).not.toBeInTheDocument());
+    expect(screen.getByDisplayValue("Dois")).toBeInTheDocument();
+  });
+
+  it("generates the PDF and shows an error if the download itself fails", async () => {
+    saveLaudo(draftWithLabel);
+    vi.spyOn(pdfModule, "downloadLaudoPdf").mockImplementation(() => {
+      throw new Error("boom");
+    });
+    renderScreen();
+
+    fireEvent.click(screen.getByRole("button", { name: /gerar pdf/i }));
+
+    await waitFor(() =>
+      expect(screen.getByText(/download do pdf falhou/i)).toBeInTheDocument(),
+    );
   });
 });
