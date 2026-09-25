@@ -1,16 +1,20 @@
 import type { jsPDF } from "jspdf";
-import { KARRER_BLUE, PAGE_HEIGHT, PAGE_WIDTH } from "@/lib/pdf/constants";
+import { FOOTER_HEIGHT, KARRER_BLUE, LEFT_MARGIN, PAGE_HEIGHT, PAGE_WIDTH } from "@/lib/pdf/constants";
 
 export function drawFooter(doc: jsPDF): void {
-  doc.setDrawColor(KARRER_BLUE);
-  doc.setLineWidth(0.5);
-  doc.line(10, PAGE_HEIGHT - 15, PAGE_WIDTH - 10, PAGE_HEIGHT - 15);
+  doc.setFillColor(KARRER_BLUE);
+  doc.rect(0, PAGE_HEIGHT - FOOTER_HEIGHT, PAGE_WIDTH, FOOTER_HEIGHT, "F");
 
-  doc.setTextColor("#64748B");
-  doc.setFontSize(8);
+  doc.setTextColor("#FFFFFF");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("KARRER SERVIÇOS DE ENGENHARIA LTDA", LEFT_MARGIN, PAGE_HEIGHT - 12);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
   doc.text(
-    "Bernardo Sieverdt Karrer — CREA/SC: 199052-0 — eng.bernardokarrer@hotmail.com",
-    10,
-    PAGE_HEIGHT - 10,
+    "Bernardo Sieverdt Karrer — CREA/SC: 199052-0 — eng.bernardokarrer@hotmail.com — (47) 99977-0433",
+    LEFT_MARGIN,
+    PAGE_HEIGHT - 6,
   );
 }
