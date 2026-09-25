@@ -1,74 +1,70 @@
 import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { ClientData, LaudoData, LaudoType, PhotoItem, PropertyData } from "@/types/laudo";
+import type { PhotoItem, PhotoReport, PhotoSize } from "@/types/laudo";
 import { getLaudo, saveLaudo, StorageQuotaError } from "@/lib/storage";
 
-export const STEP_COUNT = 6;
-
-function emptyLaudo(): LaudoData {
+function emptyReport(): PhotoReport {
   const now = new Date().toISOString();
-  return {
-    id: crypto.randomUUID(),
-    type: "vistoria_cautelar",
-    client: { name: "", document: "", address: "", email: "" },
-    property: {
-      address: "",
-      neighborhood: "",
-      city: "",
-      state: "",
-      inspectionDate: "",
-      artNumber: "",
-      description: "",
-    },
-    photos: [],
-    conclusion: "",
-    notes: "",
-    status: "draft",
-    createdAt: now,
-    updatedAt: now,
-  };
+  return { id: crypto.randomUUID(), label: "", photos: [], status: "draft", createdAt: now, updatedAt: now };
+}
+
+function renumber(photos: PhotoItem[]): PhotoItem[] {
+  return photos.map((p, i) => ({ ...p, order: i + 1 }));
 }
 
 export function useLaudoForm(id?: string) {
   const navigate = useNavigate();
-  const [step, setStep] = useState(0);
-  const [laudo, setLaudo] = useState<LaudoData>(() => (id ? (getLaudo(id) ?? emptyLaudo()) : emptyLaudo()));
+  const [report, setReport] = useState<PhotoReport>(() => (id ? (getLaudo(id) ?? emptyReport()) : emptyReport()));
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  const updateType = useCallback((type: LaudoType) => setLaudo((l) => ({ ...l, type })), []);
-  const updateClient = useCallback((client: ClientData) => setLaudo((l) => ({ ...l, client })), []);
-  const updateProperty = useCallback(
-    (property: PropertyData) => setLaudo((l) => ({ ...l, property })),
-    [],
-  );
-  const updatePhotos = useCallback((photos: PhotoItem[]) => setLaudo((l) => ({ ...l, photos })), []);
-  const updateConclusion = useCallback(
-    (conclusion: string) => setLaudo((l) => ({ ...l, conclusion })),
-    [],
-  );
-  const updateNotes = useCallback((notes: string) => setLaudo((l) => ({ ...l, notes })), []);
+  const updateLabel = useCallback((label: string) => setReport((r) => ({ ...r, label })), []);
 
-  const next = useCallback(() => setStep((s) => Math.min(s + 1, STEP_COUNT - 1)), []);
-  const back = useCallback(() => setStep((s) => Math.max(s - 1, 0)), []);
-  const goTo = useCallback(
-    (target: number) => setStep(Math.max(0, Math.min(target, STEP_COUNT - 1))),
-    [],
-  );
+  const addPhotos = useCallback((newPhotos: PhotoItem[]) => {
+    setReport((r) => ({ ...r, photos: renumber([...r.photos, ...newPhotos]) }));
+  }, []);
+
+  const updateCaption = useCallback((id: string, caption: string) => {
+    setReport((r) => ({ ...r, photos: r.photos.map((p) => (p.id === id ? { ...p, caption } : p)) }));
+  }, []);
+
+  const updateSize = useCallback((id: string, size: PhotoSize) => {
+    setReport((r) => ({ ...r, photos: r.photos.map((p) => (p.id === id ? { ...p, size } : p)) }));
+  }, []);
+
+  const removePhoto = useCallback((id: string) => {
+    setReport((r) => ({ ...r, photos: renumber(r.photos.filter((p) => p.id !== id)) }));
+  }, []);
+
+  const removeAllPhotos = useCallback(() => {
+    setReport((r) => ({ ...r, photos: [] }));
+  }, []);
+
+  const movePhoto = useCallback((id: string, direction: "up" | "down") => {
+    setReport((r) => {
+      const index = r.photos.findIndex((p) => p.id === id);
+      if (index === -1) return r;
+      const targetIndex = direction === "up" ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= r.photos.length) return r;
+      const photos = [...r.photos];
+      [photos[index], photos[targetIndex]] = [photos[targetIndex], photos[index]];
+      return { ...r, photos: renumber(photos) };
+    });
+  }, []);
 
   const persist = useCallback(
     (status: "draft" | "completed") => {
       setSaveError(null);
-      const toSave: LaudoData = { ...laudo, status };
+      const toSave: PhotoReport = { ...report, status };
       try {
         saveLaudo(toSave);
-        setLaudo(toSave);
+        setReport(toSave);
         return true;
       } catch (err) {
-        setSaveError(err instanceof StorageQuotaError ? err.message : "Erro ao salvar o laudo.");
+        setSaveError(err instanceof StorageQuotaError ? err.message : "Erro ao salvar o registro.");
         return false;
       }
     },
-    [laudo],
+    [report],
   );
 
   function saveDraft() {
@@ -80,18 +76,15 @@ export function useLaudoForm(id?: string) {
   }
 
   return {
-    step,
-    laudo,
+    report,
     saveError,
-    updateType,
-    updateClient,
-    updateProperty,
-    updatePhotos,
-    updateConclusion,
-    updateNotes,
-    next,
-    back,
-    goTo,
+    updateLabel,
+    addPhotos,
+    updateCaption,
+    updateSize,
+    removePhoto,
+    removeAllPhotos,
+    movePhoto,
     saveDraft,
     complete,
   };
