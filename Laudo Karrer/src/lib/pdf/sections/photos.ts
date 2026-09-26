@@ -6,6 +6,8 @@ import { FOOTER_HEIGHT, LEFT_MARGIN, PAGE_HEIGHT, PAGE_WIDTH } from "@/lib/pdf/c
 const COLUMN_GAP = 4;
 const ROW_GAP = 6;
 const CAPTION_HEIGHT = 16;
+// 3 lines of 9pt text comfortably fits inside the 16mm CAPTION_HEIGHT box with margin.
+const MAX_CAPTION_LINES = 3;
 const CONTENT_TOP = 25;
 const CONTENT_BOTTOM = PAGE_HEIGHT - FOOTER_HEIGHT - 5;
 const CONTENT_WIDTH = PAGE_WIDTH - LEFT_MARGIN * 2;
@@ -63,10 +65,34 @@ function drawCell(doc: jsPDF, cell: Cell, dataUrl: string, captionText: string):
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(BORDER_COLOR);
-  const lines = doc.splitTextToSize(captionText, cell.width - 4);
-  doc.text(lines, cell.x + cell.width / 2, cell.y + imageHeight + CAPTION_HEIGHT / 2, {
-    align: "center",
-    baseline: "middle",
+
+  const maxTextWidth = cell.width - 4;
+  let lines: string[] = doc.splitTextToSize(captionText, maxTextWidth);
+  if (lines.length > MAX_CAPTION_LINES) {
+    const truncated = lines.slice(0, MAX_CAPTION_LINES);
+    const lastLine = truncated[MAX_CAPTION_LINES - 1];
+    const shortened = lastLine.length > 4 ? lastLine.slice(0, -4) : lastLine;
+    truncated[MAX_CAPTION_LINES - 1] = doc.splitTextToSize(`${shortened}…`, maxTextWidth)[0];
+    lines = truncated;
+  }
+
+  // jsPDF's `baseline: "middle"` only centers the Y passed into a single
+  // text() call — with an array of lines it centers the first line and then
+  // advances each subsequent line downward, so a multi-line caption drifts
+  // below the caption box instead of being centered as a block. Calling
+  // text() once per line, each with baseline "middle" at that line's own
+  // vertical center, keeps each line correctly centered (verified against
+  // jsPDF v4.2.1's source: the baseline offset is computed fresh, per call,
+  // from the y passed in — see node_modules/jspdf/dist/jspdf.node.js ~L4492).
+  const lineHeight = (doc.getFontSize() / doc.internal.scaleFactor) * 1.15;
+  const blockCenterY = cell.y + imageHeight + CAPTION_HEIGHT / 2;
+  const startY = blockCenterY - ((lines.length - 1) * lineHeight) / 2;
+
+  lines.forEach((line, i) => {
+    doc.text(line, cell.x + cell.width / 2, startY + i * lineHeight, {
+      align: "center",
+      baseline: "middle",
+    });
   });
 }
 
@@ -89,7 +115,7 @@ export function drawPhotosSection(doc: jsPDF, photos: PhotoItem[], cursor: PageC
         photo.dataUrl,
         caption,
       );
-      goToFreshPage();
+      columns = [2, 2];
       return;
     }
 
