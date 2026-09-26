@@ -1,8 +1,12 @@
 # Sistema de Laudos Técnicos — Karrer Engenharia
 
-Aplicação web 100% client-side para geração de laudos técnicos de engenharia
-(vistoria cautelar, laudo técnico, orçamento), com PDF gerado no navegador e
-histórico salvo em `localStorage`. Sem backend, sem banco de dados.
+Aplicação web 100% client-side para gerar o registro fotográfico de laudos
+técnicos de engenharia: sobe fotos, escreve a legenda de cada uma, escolhe o
+tamanho (1/4, 1/2 ou página inteira) e exporta um PDF com a identidade visual
+da Karrer (faixa azul, fotos com legenda em caixa). O restante do laudo
+(capa, dados do cliente, conclusão etc.) é montado separadamente — o PDF
+gerado aqui é feito para ser unido a esse restante depois, por exemplo com o
+iLovePDF. Histórico salvo em `localStorage`. Sem backend, sem banco de dados.
 
 ## Rodar localmente
 
