@@ -25,20 +25,36 @@ function NewLaudoScreen({ id }: { id?: string }) {
   const form = useLaudoForm(id);
   const [isGenerating, setIsGenerating] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [isCompressing, setIsCompressing] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   async function handleFilesSelected(files: File[]) {
+    setUploadError(null);
+    setIsCompressing(true);
     const newPhotos: PhotoItem[] = [];
+    let failedCount = 0;
     for (const file of files) {
-      const dataUrl = await compressImageFile(file);
-      newPhotos.push({ id: crypto.randomUUID(), dataUrl, caption: "", order: 0, size: "quarter" });
+      try {
+        const dataUrl = await compressImageFile(file);
+        newPhotos.push({ id: crypto.randomUUID(), dataUrl, caption: "", order: 0, size: "quarter" });
+      } catch {
+        failedCount += 1;
+      }
     }
-    form.addPhotos(newPhotos);
+    if (newPhotos.length > 0) form.addPhotos(newPhotos);
+    if (failedCount > 0) {
+      setUploadError(
+        failedCount === 1
+          ? "1 arquivo não pôde ser processado e foi ignorado."
+          : `${failedCount} arquivos não puderam ser processados e foram ignorados.`,
+      );
+    }
+    setIsCompressing(false);
   }
 
   function handleGeneratePdf() {
     if (isGenerating) return;
-    const success = form.complete();
-    if (!success) return;
+    form.complete(); // may fail on storage quota — form.saveError already communicates that; we still generate the PDF below regardless.
 
     setDownloadError(null);
     setIsGenerating(true);
@@ -48,7 +64,7 @@ function NewLaudoScreen({ id }: { id?: string }) {
       try {
         downloadLaudoPdf(form.report);
       } catch {
-        setDownloadError("O registro foi salvo, mas o download do PDF falhou. Tente baixar novamente.");
+        setDownloadError("O download do PDF falhou. Tente novamente.");
       } finally {
         setIsGenerating(false);
       }
@@ -57,7 +73,9 @@ function NewLaudoScreen({ id }: { id?: string }) {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="mb-4 text-xl font-semibold text-karrer-navy">Novo Registro Fotográfico</h1>
+      <h1 className="mb-4 text-xl font-semibold text-karrer-navy">
+        {id ? "Editar Registro Fotográfico" : "Novo Registro Fotográfico"}
+      </h1>
 
       <label htmlFor="report-label" className="mb-1 block text-sm font-medium text-slate-700">
         Apelido (opcional, só para você localizar depois — não aparece no PDF)
@@ -97,6 +115,7 @@ function NewLaudoScreen({ id }: { id?: string }) {
 
       {form.saveError && <p className="mb-4 text-sm text-red-600">{form.saveError}</p>}
       {downloadError && <p className="mb-4 text-sm text-red-600">{downloadError}</p>}
+      {uploadError && <p className="mb-4 text-sm text-red-600">{uploadError}</p>}
 
       <div className="flex justify-end gap-3">
         <Button type="button" variant="outline" onClick={form.saveDraft}>
@@ -104,7 +123,7 @@ function NewLaudoScreen({ id }: { id?: string }) {
         </Button>
         <ShimmerButton
           onClick={handleGeneratePdf}
-          disabled={isGenerating || form.report.photos.length === 0}
+          disabled={isGenerating || isCompressing || form.report.photos.length === 0}
           background="#1B3A6B"
         >
           {isGenerating ? "Gerando PDF…" : "Gerar PDF"}

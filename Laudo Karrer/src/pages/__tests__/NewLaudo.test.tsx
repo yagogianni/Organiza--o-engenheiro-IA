@@ -2,7 +2,8 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { vi } from "vitest";
 import NewLaudo from "@/pages/NewLaudo";
-import { saveLaudo } from "@/lib/storage";
+import { saveLaudo, StorageQuotaError } from "@/lib/storage";
+import * as storage from "@/lib/storage";
 import * as imageCompression from "@/lib/imageCompression";
 import * as pdfModule from "@/lib/pdf/generateLaudo";
 import type { PhotoReport } from "@/types/laudo";
@@ -113,5 +114,68 @@ describe("NewLaudo", () => {
     await waitFor(() =>
       expect(screen.getByText(/download do pdf falhou/i)).toBeInTheDocument(),
     );
+  });
+
+  it("adds the photos that succeed and reports how many failed, instead of dropping the whole batch", async () => {
+    vi.spyOn(imageCompression, "compressImageFile")
+      .mockResolvedValueOnce("data:image/jpeg;base64,OK")
+      .mockRejectedValueOnce(new Error("unsupported format"));
+    render(
+      <MemoryRouter initialEntries={["/novo-laudo"]}>
+        <Routes>
+          <Route path="/novo-laudo" element={<NewLaudo />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    fireEvent.drop(screen.getByRole("button", { name: /arraste fotos/i }), {
+      dataTransfer: { files: [makeFile("good.jpg"), makeFile("bad.heic")] },
+    });
+
+    await waitFor(() => expect(screen.getAllByPlaceholderText(/legenda/i)).toHaveLength(1));
+    expect(
+      screen.getByText("1 arquivo não pôde ser processado e foi ignorado."),
+    ).toBeInTheDocument();
+  });
+
+  it("disables Gerar PDF while photos are still compressing, and re-enables it once done", async () => {
+    let resolveCompression!: (value: string) => void;
+    const pending = new Promise<string>((resolve) => {
+      resolveCompression = resolve;
+    });
+    vi.spyOn(imageCompression, "compressImageFile").mockReturnValue(pending);
+    render(
+      <MemoryRouter initialEntries={["/novo-laudo"]}>
+        <Routes>
+          <Route path="/novo-laudo" element={<NewLaudo />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    fireEvent.drop(screen.getByRole("button", { name: /arraste fotos/i }), {
+      dataTransfer: { files: [makeFile("a.jpg")] },
+    });
+
+    await waitFor(() => expect(screen.getByRole("button", { name: /gerar pdf/i })).toBeDisabled());
+
+    resolveCompression("data:image/jpeg;base64,OK");
+
+    await waitFor(() => expect(screen.getByRole("button", { name: /gerar pdf/i })).not.toBeDisabled());
+  });
+
+  it("still generates and downloads the PDF when saving to history fails on a full storage quota", async () => {
+    saveLaudo(draftWithLabel);
+    vi.spyOn(storage, "saveLaudo").mockImplementation(() => {
+      throw new StorageQuotaError();
+    });
+    const downloadSpy = vi.spyOn(pdfModule, "downloadLaudoPdf").mockImplementation(() => {});
+    renderScreen();
+
+    fireEvent.click(screen.getByRole("button", { name: /gerar pdf/i }));
+
+    await waitFor(() => expect(downloadSpy).toHaveBeenCalled());
+    expect(
+      screen.getByText("Espaço de armazenamento cheio. Baixe o PDF e exclua rascunhos antigos."),
+    ).toBeInTheDocument();
   });
 });
