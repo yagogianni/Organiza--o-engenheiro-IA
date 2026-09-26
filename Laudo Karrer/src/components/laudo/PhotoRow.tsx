@@ -32,16 +32,16 @@ export function PhotoRow({
   onRemove,
 }: PhotoRowProps) {
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-[#E2E8F0] p-2">
+    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-[#E2E8F0] p-2 sm:flex-nowrap">
       <img src={photo.dataUrl} alt="" className="h-20 w-20 rounded-md object-cover" />
       <Badge className="bg-karrer-blue">{photo.order}</Badge>
       <Input
         value={photo.caption}
         onChange={(e) => onCaptionChange(e.target.value)}
         placeholder="Legenda da foto"
-        className="flex-1"
+        className="min-w-[140px] flex-1 sm:min-w-0"
       />
-      <Select value={photo.size} onValueChange={(value) => onSizeChange(value as PhotoSize)}>
+      <Select value={photo.size ?? "quarter"} onValueChange={(value) => onSizeChange(value as PhotoSize)}>
         <SelectTrigger aria-label={`Tamanho da foto ${photo.order}`} className="w-36">
           <SelectValue />
         </SelectTrigger>
