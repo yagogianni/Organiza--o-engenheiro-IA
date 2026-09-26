@@ -32,7 +32,7 @@ export function LaudoListItem({ laudo, onDelete }: LaudoListItemProps) {
     }, 0);
   }
 
-  const title = laudo.label || `Registro fotográfico — ${laudo.photos.length} foto(s)`;
+  const title = laudo.label?.trim() || `Registro fotográfico — ${laudo.photos.length} foto(s)`;
 
   return (
     <div className="rounded-xl border border-[#E2E8F0] bg-white p-4">

@@ -88,4 +88,14 @@ describe("downloadLaudoPdf", () => {
     downloadLaudoPdf({ ...sampleReport, label: undefined });
     expect(lastSaveSpy).toHaveBeenCalledWith("registro-fotografico-1.pdf");
   });
+
+  it("strips accents from the label instead of mangling them into underscores", () => {
+    downloadLaudoPdf({ ...sampleReport, label: "Rua Libéria" });
+    expect(lastSaveSpy).toHaveBeenCalledWith("registro-fotografico-Rua_Liberia.pdf");
+  });
+
+  it("falls back to the report id when the label is only whitespace", () => {
+    downloadLaudoPdf({ ...sampleReport, label: "   " });
+    expect(lastSaveSpy).toHaveBeenCalledWith("registro-fotografico-1.pdf");
+  });
 });

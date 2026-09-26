@@ -22,6 +22,10 @@ export function generateLaudoPdf(report: PhotoReport): jsPDF {
 
 export function downloadLaudoPdf(report: PhotoReport): void {
   const doc = generateLaudoPdf(report);
-  const safeName = `registro-fotografico-${report.label || report.id}.pdf`.replace(/[^\w.-]+/g, "_");
+  // Strip diacritics (NFD normalize + drop combining marks) before the
+  // safe-character replace, so e.g. "Libéria" becomes "Liberia" instead of
+  // "Lib_ria".
+  const baseName = (report.label?.trim() || report.id).normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const safeName = `registro-fotografico-${baseName}.pdf`.replace(/[^\w.-]+/g, "_");
   doc.save(safeName);
 }

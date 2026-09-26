@@ -43,7 +43,7 @@ export default function LaudoDetail() {
     }, 0);
   }
 
-  const title = laudo.label || `Registro fotográfico — ${laudo.photos.length} foto(s)`;
+  const title = laudo.label?.trim() || `Registro fotográfico — ${laudo.photos.length} foto(s)`;
 
   return (
     <div className="max-w-2xl">
