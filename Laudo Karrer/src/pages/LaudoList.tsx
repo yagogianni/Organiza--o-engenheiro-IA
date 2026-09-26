@@ -2,11 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { SparklesText } from "@/components/ui/sparkles-text";
 import { LaudoListItem } from "@/components/laudo/LaudoListItem";
-import { LAUDO_TYPE_LABELS, type LaudoData } from "@/types/laudo";
+import type { PhotoReport } from "@/types/laudo";
 import { getLaudos, deleteLaudo } from "@/lib/storage";
 
 export default function LaudoList() {
-  const [laudos, setLaudos] = useState<LaudoData[]>([]);
+  const [laudos, setLaudos] = useState<PhotoReport[]>([]);
   const [query, setQuery] = useState("");
 
   useEffect(() => {
@@ -21,12 +21,7 @@ export default function LaudoList() {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return laudos;
-    return laudos.filter((l) =>
-      [l.client.name, l.property.address, LAUDO_TYPE_LABELS[l.type]]
-        .join(" ")
-        .toLowerCase()
-        .includes(q),
-    );
+    return laudos.filter((l) => (l.label ?? "").toLowerCase().includes(q));
   }, [laudos, query]);
 
   return (
@@ -36,7 +31,7 @@ export default function LaudoList() {
       <Input
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Buscar por cliente, endereço ou tipo"
+        placeholder="Buscar por apelido"
         className="mb-6"
         aria-label="Buscar laudos"
       />
