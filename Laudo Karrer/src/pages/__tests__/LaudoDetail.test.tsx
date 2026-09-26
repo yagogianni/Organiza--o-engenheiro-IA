@@ -2,31 +2,18 @@ import { render, screen, fireEvent, within, waitFor } from "@testing-library/rea
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { vi } from "vitest";
 import LaudoDetail from "@/pages/LaudoDetail";
-import { saveLaudo, getLaudo, StorageQuotaError } from "@/lib/storage";
-import * as storageModule from "@/lib/storage";
+import { saveLaudo, getLaudo } from "@/lib/storage";
 import * as pdfModule from "@/lib/pdf/generateLaudo";
-import type { LaudoData } from "@/types/laudo";
+import type { PhotoReport } from "@/types/laudo";
 
-function makeLaudo(overrides: Partial<LaudoData> = {}): LaudoData {
+function makeReport(overrides: Partial<PhotoReport> = {}): PhotoReport {
   return {
-    id: "laudo-1",
-    type: "laudo_tecnico",
-    client: { name: "Carlos Dias", document: "", address: "" },
-    property: {
-      address: "Rua Y, 20",
-      neighborhood: "",
-      city: "",
-      state: "",
-      inspectionDate: "",
-      artNumber: "ART-99",
-      description: "",
-    },
-    photos: [],
-    conclusion: "Está tudo certo.",
-    notes: "",
+    id: "report-1",
+    label: "Vistoria Rua Y",
+    photos: [{ id: "p1", dataUrl: "data:1", caption: "Fachada", order: 1, size: "quarter" }],
     status: "draft",
-    createdAt: "2026-09-14T10:00:00.000Z",
-    updatedAt: "2026-09-14T10:00:00.000Z",
+    createdAt: "2026-09-25T10:00:00.000Z",
+    updatedAt: "2026-09-25T10:00:00.000Z",
     ...overrides,
   };
 }
@@ -50,79 +37,50 @@ describe("LaudoDetail", () => {
     expect(screen.getByText(/laudo não encontrado/i)).toBeInTheDocument();
   });
 
-  it("renders the laudo's details", () => {
-    saveLaudo(makeLaudo());
-    renderDetail("laudo-1");
-    expect(screen.getByText("Carlos Dias")).toBeInTheDocument();
-    expect(screen.getByText("Está tudo certo.")).toBeInTheDocument();
-    expect(screen.getByText("ART-99")).toBeInTheDocument();
+  it("renders the report's label and photo list", () => {
+    saveLaudo(makeReport());
+    renderDetail("report-1");
+    expect(screen.getByText("Vistoria Rua Y")).toBeInTheDocument();
+    expect(screen.getByText("Fachada")).toBeInTheDocument();
+  });
+
+  it("falls back to a photo-count title when there is no label", () => {
+    saveLaudo(makeReport({ label: undefined }));
+    renderDetail("report-1");
+    expect(screen.getByText("Registro fotográfico — 1 foto(s)")).toBeInTheDocument();
   });
 
   it("downloads the PDF when clicking Baixar PDF", async () => {
-    saveLaudo(makeLaudo());
+    saveLaudo(makeReport());
     const downloadSpy = vi.spyOn(pdfModule, "downloadLaudoPdf").mockImplementation(() => {});
-    renderDetail("laudo-1");
+    renderDetail("report-1");
 
     fireEvent.click(screen.getByRole("button", { name: /baixar pdf/i }));
     await waitFor(() => expect(downloadSpy).toHaveBeenCalled());
   });
 
   it("shows an error and re-enables the button when the PDF download fails", async () => {
-    saveLaudo(makeLaudo());
+    saveLaudo(makeReport());
     vi.spyOn(pdfModule, "downloadLaudoPdf").mockImplementation(() => {
       throw new Error("boom");
     });
-    renderDetail("laudo-1");
+    renderDetail("report-1");
 
     const button = screen.getByRole("button", { name: /baixar pdf/i });
     fireEvent.click(button);
 
-    await waitFor(() =>
-      expect(screen.getByText(/não foi possível gerar o pdf/i)).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByText(/não foi possível gerar o pdf/i)).toBeInTheDocument());
     expect(button).not.toBeDisabled();
   });
 
-  it("keeps the notes editor open and shows an error when saving notes hits the storage quota", async () => {
-    saveLaudo(makeLaudo({ notes: "Nota original" }));
-    vi.spyOn(storageModule, "saveLaudo").mockImplementation(() => {
-      throw new StorageQuotaError();
-    });
-    renderDetail("laudo-1");
-
-    fireEvent.click(screen.getByRole("button", { name: /editar notas/i }));
-    const textarea = screen.getByDisplayValue("Nota original");
-    fireEvent.change(textarea, { target: { value: "Nota atualizada" } });
-    fireEvent.click(screen.getByRole("button", { name: /salvar notas/i }));
-
-    await waitFor(() =>
-      expect(screen.getByText(/espaço de armazenamento cheio/i)).toBeInTheDocument(),
-    );
-    // The editor stays open with the user's draft so nothing is lost.
-    expect(screen.getByDisplayValue("Nota atualizada")).toBeInTheDocument();
-  });
-
-  it("edits and saves the technical notes", () => {
-    saveLaudo(makeLaudo({ notes: "Nota original" }));
-    renderDetail("laudo-1");
-
-    fireEvent.click(screen.getByRole("button", { name: /editar notas/i }));
-    const textarea = screen.getByDisplayValue("Nota original");
-    fireEvent.change(textarea, { target: { value: "Nota atualizada" } });
-    fireEvent.click(screen.getByRole("button", { name: /salvar notas/i }));
-
-    expect(screen.getByText("Nota atualizada")).toBeInTheDocument();
-    expect(getLaudo("laudo-1")?.notes).toBe("Nota atualizada");
-  });
-
   it("deletes the laudo after confirming the dialog", () => {
-    saveLaudo(makeLaudo());
-    renderDetail("laudo-1");
+    saveLaudo(makeReport());
+    renderDetail("report-1");
 
     fireEvent.click(screen.getByRole("button", { name: /excluir laudo/i }));
     const dialog = screen.getByRole("dialog");
     fireEvent.click(within(dialog).getByRole("button", { name: "Excluir" }));
 
-    expect(getLaudo("laudo-1")).toBeUndefined();
+    expect(getLaudo("report-1")).toBeUndefined();
   });
 });
