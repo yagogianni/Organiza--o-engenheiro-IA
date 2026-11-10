@@ -26,7 +26,8 @@ export default function LaudoList() {
 
   return (
     <div>
-      <h1 className="mb-4 text-xl font-semibold text-karrer-navy">Meus Laudos</h1>
+      <h1 className="mb-1 text-xl font-semibold text-karrer-navy">Meus Laudos</h1>
+      <p className="mb-4 text-xs text-slate-500">Os registros ficam salvos apenas neste navegador.</p>
 
       <Input
         value={query}

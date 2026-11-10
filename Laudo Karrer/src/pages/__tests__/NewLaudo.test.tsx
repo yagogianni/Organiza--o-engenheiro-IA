@@ -163,6 +163,30 @@ describe("NewLaudo", () => {
     await waitFor(() => expect(screen.getByRole("button", { name: /gerar pdf/i })).not.toBeDisabled());
   });
 
+  it("defaults the PDF options to footer and title on, page numbers off, and saves changes with the draft", async () => {
+    saveLaudo(draftWithLabel);
+    const downloadSpy = vi.spyOn(pdfModule, "downloadLaudoPdf").mockImplementation(() => {});
+    renderScreen();
+
+    const footer = screen.getByLabelText(/incluir rodapé azul karrer/i);
+    const title = screen.getByLabelText(/incluir título 'registro fotográfico'/i);
+    const pageNumbers = screen.getByLabelText(/numerar páginas/i);
+    expect(footer).toBeChecked();
+    expect(title).toBeChecked();
+    expect(pageNumbers).not.toBeChecked();
+
+    fireEvent.click(footer);
+    fireEvent.click(pageNumbers);
+    fireEvent.click(screen.getByRole("button", { name: /gerar pdf/i }));
+
+    await waitFor(() => expect(downloadSpy).toHaveBeenCalled());
+    expect(downloadSpy.mock.calls[0][0].pdfOptions).toEqual({
+      includeFooter: false,
+      includeTitle: true,
+      numberPages: true,
+    });
+  });
+
   it("still generates and downloads the PDF when saving to history fails on a full storage quota", async () => {
     saveLaudo(draftWithLabel);
     vi.spyOn(storage, "saveLaudo").mockImplementation(() => {

@@ -2,10 +2,10 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Eye, Pencil, Download, Loader2, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { ConfirmDeleteDialog } from "@/components/laudo/ConfirmDeleteDialog";
 import type { PhotoReport } from "@/types/laudo";
 import { downloadLaudoPdf } from "@/lib/pdf/generateLaudo";
+import { reportSubtitle, reportTitle } from "@/lib/reportTitle";
 
 export interface LaudoListItemProps {
   laudo: PhotoReport;
@@ -32,16 +32,12 @@ export function LaudoListItem({ laudo, onDelete }: LaudoListItemProps) {
     }, 0);
   }
 
-  const title = laudo.label?.trim() || `Registro fotográfico — ${laudo.photos.length} foto(s)`;
-
   return (
     <div className="rounded-xl border border-[#E2E8F0] bg-white p-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="font-medium text-slate-800">{title}</p>
-          <p className="text-sm text-slate-500">
-            {laudo.photos.length} foto(s) — {new Date(laudo.createdAt).toLocaleDateString("pt-BR")}
-          </p>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate font-medium text-slate-800">{reportTitle(laudo)}</p>
+          <p className="text-sm text-slate-500">{reportSubtitle(laudo)}</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -83,28 +79,7 @@ export function LaudoListItem({ laudo, onDelete }: LaudoListItemProps) {
 
       {downloadError && <p className="mt-2 text-xs text-red-600">{downloadError}</p>}
 
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Excluir laudo?</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-slate-600">Esta ação não pode ser desfeita.</p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmOpen(false)}>
-              Cancelar
-            </Button>
-            <Button
-              className="bg-red-600 hover:bg-red-700"
-              onClick={() => {
-                onDelete(laudo.id);
-                setConfirmOpen(false);
-              }}
-            >
-              Excluir
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDeleteDialog open={confirmOpen} onOpenChange={setConfirmOpen} onConfirm={() => onDelete(laudo.id)} />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { MemoryRouter } from "react-router-dom";
 import { vi } from "vitest";
 import { LaudoListItem } from "@/components/laudo/LaudoListItem";
 import * as pdfModule from "@/lib/pdf/generateLaudo";
+import { formatDateTime } from "@/lib/reportTitle";
 import type { PhotoReport } from "@/types/laudo";
 
 function makeReport(overrides: Partial<PhotoReport> = {}): PhotoReport {
@@ -29,16 +30,43 @@ describe("LaudoListItem", () => {
     expect(screen.getByText("Vistoria Rua das Flores")).toBeInTheDocument();
   });
 
-  it("falls back to a photo-count title when there is no label", () => {
+  it("shows the photo count and date/time only once, on the line below the title", () => {
+    const laudo = makeReport({ photos: [{ id: "p1", dataUrl: "d", caption: "", order: 1, size: "quarter" }] });
     render(
       <MemoryRouter>
-        <LaudoListItem
-          laudo={makeReport({ label: undefined, photos: [{ id: "p1", dataUrl: "d", caption: "", order: 1, size: "quarter" }] })}
-          onDelete={vi.fn()}
-        />
+        <LaudoListItem laudo={laudo} onDelete={vi.fn()} />
       </MemoryRouter>,
     );
-    expect(screen.getByText("Registro fotográfico — 1 foto(s)")).toBeInTheDocument();
+    expect(screen.getByText("Vistoria Rua das Flores")).toBeInTheDocument();
+    expect(screen.getByText(`1 foto(s) — ${formatDateTime(laudo.createdAt)}`)).toBeInTheDocument();
+    expect(screen.getAllByText(/foto\(s\)/)).toHaveLength(1);
+  });
+
+  it("uses the date and time in the title when there is no label, to tell records apart", () => {
+    const laudo = makeReport({ label: "  " });
+    render(
+      <MemoryRouter>
+        <LaudoListItem laudo={laudo} onDelete={vi.fn()} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText(`Registro fotográfico — ${formatDateTime(laudo.createdAt)}`)).toBeInTheDocument();
+  });
+
+  it("asks for confirmation before deleting, and only deletes on confirm", () => {
+    const onDelete = vi.fn();
+    render(
+      <MemoryRouter>
+        <LaudoListItem laudo={makeReport()} onDelete={onDelete} />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /excluir laudo/i }));
+    expect(screen.getByText("Excluir este registro?")).toBeInTheDocument();
+    expect(screen.getByText("Essa ação não pode ser desfeita.")).toBeInTheDocument();
+    expect(onDelete).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Excluir" }));
+    expect(onDelete).toHaveBeenCalledWith("report-1");
   });
 
   it("shows an 'Editar laudo' link to the resume-editing route for a draft", () => {

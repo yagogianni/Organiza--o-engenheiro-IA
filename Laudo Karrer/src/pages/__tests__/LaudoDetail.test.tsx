@@ -4,6 +4,7 @@ import { vi } from "vitest";
 import LaudoDetail from "@/pages/LaudoDetail";
 import { saveLaudo, getLaudo } from "@/lib/storage";
 import * as pdfModule from "@/lib/pdf/generateLaudo";
+import { formatDateTime } from "@/lib/reportTitle";
 import type { PhotoReport } from "@/types/laudo";
 
 function makeReport(overrides: Partial<PhotoReport> = {}): PhotoReport {
@@ -44,10 +45,12 @@ describe("LaudoDetail", () => {
     expect(screen.getByText("Fachada")).toBeInTheDocument();
   });
 
-  it("falls back to a photo-count title when there is no label", () => {
-    saveLaudo(makeReport({ label: undefined }));
+  it("falls back to a date/time title when there is no label", () => {
+    const report = makeReport({ label: undefined });
+    saveLaudo(report);
     renderDetail("report-1");
-    expect(screen.getByText("Registro fotográfico — 1 foto(s)")).toBeInTheDocument();
+    expect(screen.getByText(`Registro fotográfico — ${formatDateTime(report.createdAt)}`)).toBeInTheDocument();
+    expect(screen.getByText(`1 foto(s) — ${formatDateTime(report.createdAt)}`)).toBeInTheDocument();
   });
 
   it("downloads the PDF when clicking Baixar PDF", async () => {

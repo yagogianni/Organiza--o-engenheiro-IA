@@ -1,5 +1,6 @@
 import { vi } from "vitest";
 import { generateLaudoPdf, downloadLaudoPdf } from "@/lib/pdf/generateLaudo";
+import { PDF_LAYOUT } from "@/lib/pdf/constants";
 import type { PhotoReport } from "@/types/laudo";
 
 // jsPDF v4 assigns its core drawing methods (text, save, addPage, ...) as
@@ -51,8 +52,47 @@ describe("generateLaudoPdf", () => {
   it("draws the title once on the first page and every photo, without throwing", () => {
     const doc = generateLaudoPdf(sampleReport);
     expect(doc.getNumberOfPages()).toBe(1);
-    expect(lastTextSpy).toHaveBeenCalledWith("Registro Fotográfico", 15, 18);
+    expect(lastTextSpy).toHaveBeenCalledWith(
+      "Registro Fotográfico",
+      PDF_LAYOUT.marginX,
+      PDF_LAYOUT.title.baselineY,
+    );
     expect(lastAddImageSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it("works in points on an A4 page", () => {
+    const doc = generateLaudoPdf(sampleReport);
+    expect(doc.internal.pageSize.getWidth()).toBeCloseTo(595.28, 1);
+    expect(doc.internal.pageSize.getHeight()).toBeCloseTo(841.89, 1);
+  });
+
+  it("draws the footer and title by default, and no page numbers", () => {
+    generateLaudoPdf(sampleReport);
+    const texts = lastTextSpy.mock.calls.map((call: unknown[]) => call[0]);
+    expect(texts).toContain("KARRER SERVIÇOS DE ENGENHARIA LTDA");
+    expect(texts).toContain("Registro Fotográfico");
+    expect(texts.some((t: unknown) => typeof t === "string" && t.startsWith("Página"))).toBe(false);
+  });
+
+  it("omits the footer and title when those options are off", () => {
+    generateLaudoPdf({ ...sampleReport, pdfOptions: { includeFooter: false, includeTitle: false } });
+    const texts = lastTextSpy.mock.calls.map((call: unknown[]) => call[0]);
+    expect(texts).not.toContain("KARRER SERVIÇOS DE ENGENHARIA LTDA");
+    expect(texts).not.toContain("Registro Fotográfico");
+  });
+
+  it("numbers every page as 'Página X de Y' when asked", () => {
+    const photos = Array.from({ length: 5 }, (_, i) => ({
+      id: `p${i}`,
+      dataUrl: "data:image/jpeg;base64,FAKE",
+      caption: "",
+      order: i + 1,
+      size: "quarter" as const,
+    }));
+    generateLaudoPdf({ ...sampleReport, photos, pdfOptions: { numberPages: true } });
+    const texts = lastTextSpy.mock.calls.map((call: unknown[]) => call[0]);
+    expect(texts).toContain("Página 1 de 2");
+    expect(texts).toContain("Página 2 de 2");
   });
 
   it("does not repeat the title on later pages", () => {

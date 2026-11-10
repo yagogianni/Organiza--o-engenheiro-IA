@@ -1,7 +1,8 @@
 import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { PhotoItem, PhotoReport, PhotoSize } from "@/types/laudo";
+import type { PdfOptions, PhotoItem, PhotoReport, PhotoSize } from "@/types/laudo";
 import { getLaudo, saveLaudo, StorageQuotaError } from "@/lib/storage";
+import { resolvePdfOptions } from "@/lib/pdf/constants";
 
 function emptyReport(): PhotoReport {
   const now = new Date().toISOString();
@@ -18,6 +19,10 @@ export function useLaudoForm(id?: string) {
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const updateLabel = useCallback((label: string) => setReport((r) => ({ ...r, label })), []);
+
+  const updatePdfOption = useCallback(<K extends keyof PdfOptions>(key: K, value: PdfOptions[K]) => {
+    setReport((r) => ({ ...r, pdfOptions: { ...resolvePdfOptions(r.pdfOptions), [key]: value } }));
+  }, []);
 
   const addPhotos = useCallback((newPhotos: PhotoItem[]) => {
     setReport((r) => ({ ...r, photos: renumber([...r.photos, ...newPhotos]) }));
@@ -79,6 +84,7 @@ export function useLaudoForm(id?: string) {
     report,
     saveError,
     updateLabel,
+    updatePdfOption,
     addPhotos,
     updateCaption,
     updateSize,

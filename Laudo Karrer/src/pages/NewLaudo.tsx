@@ -8,7 +8,30 @@ import { Button } from "@/components/ui/button";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { compressImageFile } from "@/lib/imageCompression";
 import { downloadLaudoPdf } from "@/lib/pdf/generateLaudo";
+import { resolvePdfOptions } from "@/lib/pdf/constants";
 import type { PhotoItem } from "@/types/laudo";
+
+function PdfOptionCheckbox({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="h-4 w-4 shrink-0 cursor-pointer rounded border-slate-300 accent-karrer-blue"
+      />
+      {label}
+    </label>
+  );
+}
 
 export default function NewLaudo() {
   const { id } = useParams<{ id: string }>();
@@ -27,6 +50,7 @@ function NewLaudoScreen({ id }: { id?: string }) {
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [isCompressing, setIsCompressing] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const pdfOptions = resolvePdfOptions(form.report.pdfOptions);
 
   async function handleFilesSelected(files: File[]) {
     setUploadError(null);
@@ -87,6 +111,27 @@ function NewLaudoScreen({ id }: { id?: string }) {
         className="mb-6"
         placeholder="Ex: Vistoria Rua Libéria 825"
       />
+
+      <fieldset className="mb-6 rounded-lg border border-[#E2E8F0] p-3">
+        <legend className="px-1 text-sm font-medium text-slate-700">Opções do PDF</legend>
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-x-6">
+          <PdfOptionCheckbox
+            label="Incluir rodapé azul Karrer"
+            checked={pdfOptions.includeFooter}
+            onChange={(checked) => form.updatePdfOption("includeFooter", checked)}
+          />
+          <PdfOptionCheckbox
+            label="Incluir título 'Registro Fotográfico' na primeira página"
+            checked={pdfOptions.includeTitle}
+            onChange={(checked) => form.updatePdfOption("includeTitle", checked)}
+          />
+          <PdfOptionCheckbox
+            label="Numerar páginas"
+            checked={pdfOptions.numberPages}
+            onChange={(checked) => form.updatePdfOption("numberPages", checked)}
+          />
+        </div>
+      </fieldset>
 
       <FileDropzone onFilesSelected={handleFilesSelected} className="mb-4" />
 

@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { ConfirmDeleteDialog } from "@/components/laudo/ConfirmDeleteDialog";
 import type { PhotoReport } from "@/types/laudo";
 import { getLaudo, deleteLaudo } from "@/lib/storage";
 import { downloadLaudoPdf } from "@/lib/pdf/generateLaudo";
+import { reportSubtitle, reportTitle } from "@/lib/reportTitle";
 
 export default function LaudoDetail() {
   const { id } = useParams<{ id: string }>();
@@ -43,12 +44,13 @@ export default function LaudoDetail() {
     }, 0);
   }
 
-  const title = laudo.label?.trim() || `Registro fotográfico — ${laudo.photos.length} foto(s)`;
-
   return (
     <div className="max-w-2xl">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-karrer-navy">{title}</h1>
+      <div className="mb-6 flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl font-semibold text-karrer-navy">{reportTitle(laudo)}</h1>
+          <p className="text-sm text-slate-500">{reportSubtitle(laudo)}</p>
+        </div>
         <div className="flex items-center gap-3">
           <Badge className={laudo.status === "completed" ? "bg-green-600" : "bg-amber-500"}>
             {laudo.status === "completed" ? "Concluído" : "Rascunho"}
@@ -90,22 +92,7 @@ export default function LaudoDetail() {
       </div>
       {downloadError && <p className="mt-2 text-sm text-red-600">{downloadError}</p>}
 
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Excluir laudo?</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-slate-600">Esta ação não pode ser desfeita.</p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmOpen(false)}>
-              Cancelar
-            </Button>
-            <Button className="bg-red-600 hover:bg-red-700" onClick={handleDelete}>
-              Excluir
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDeleteDialog open={confirmOpen} onOpenChange={setConfirmOpen} onConfirm={handleDelete} />
     </div>
   );
 }
